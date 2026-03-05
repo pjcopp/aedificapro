@@ -19,12 +19,16 @@ import { EmailModule } from "@/components/modules/email-module"
 import { PropertyMapModule } from "@/components/modules/property-map"
 import { TeamModule } from "@/components/modules/team"
 import { AIAssistantModule } from "@/components/modules/ai-assistant"
+import { OwnersModule } from "@/components/modules/owners"
+import { CandidatesModule } from "@/components/modules/candidates"
 
 const moduleLabels: Record<string, string> = {
   dashboard: "Dashboard",
-  properties: "Vastgoed",
+  properties: "Panden",
+  owners: "Verhuurders",
   tenants: "Huurders",
-  map: "Vastgoedkaart",
+  candidates: "Kandidaten",
+  map: "Pandenkaart",
   contracts: "Contracten",
   tickets: "Tickets",
   invoicing: "Facturatie",
@@ -46,6 +50,8 @@ export default function Home() {
       case "dashboard": return <DashboardModule />
       case "properties": return <PropertiesModule />
       case "tenants": return <TenantsModule />
+      case "owners": return <OwnersModule />
+      case "candidates": return <CandidatesModule />
       case "map": return <PropertyMapModule />
       case "contracts": return <ContractsModule />
       case "tickets": return <TicketsModule />

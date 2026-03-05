@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { CheckCircle2, Clock, AlertTriangle } from "lucide-react"
+import { CheckCircle2, Clock, AlertTriangle, Send } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -106,7 +106,7 @@ export function InvoicingModule() {
       <Card>
         <CardContent className="p-0">
           <Table>
-            <TableHeader><TableRow><TableHead>Factuur</TableHead><TableHead>Pand</TableHead><TableHead>Periode</TableHead><TableHead>Huur</TableHead><TableHead>Nutsvoorz.</TableHead><TableHead>Totaal</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Factuur</TableHead><TableHead>Pand</TableHead><TableHead>Periode</TableHead><TableHead>Huur</TableHead><TableHead>Nutsvoorz.</TableHead><TableHead>Totaal</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
             <TableBody>
               {filtered.map((inv) => {
                 const property = properties.find((p) => p.id === inv.propertyId)
@@ -120,6 +120,13 @@ export function InvoicingModule() {
                     <TableCell>&euro;{utilities}</TableCell>
                     <TableCell className="font-medium">&euro;{inv.total.toLocaleString()}</TableCell>
                     <TableCell><Badge variant="outline" className={statusColors[inv.status]}>{statusLabels[inv.status]}</Badge></TableCell>
+                    <TableCell>
+                      {(inv.status === "pending" || inv.status === "overdue") && (
+                        <Button size="sm" variant="outline" className="text-xs" onClick={(e) => { e.stopPropagation(); alert("Herinnering verzonden via WhatsApp en e-mail naar " + (tenants.find((t) => t.id === inv.tenantId)?.name || "huurder")) }}>
+                          <Send className="size-3 mr-1" /> Herinnering
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 )
               })}

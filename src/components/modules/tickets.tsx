@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Search, AlertCircle, Clock, CheckCircle2, XCircle, GripVertical } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Search, AlertCircle, Clock, CheckCircle2, XCircle, GripVertical, Plus, Camera, ArrowLeft, MapPin } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import { tickets as initialTickets, properties, workers } from "@/lib/mock-data"
 import type { Ticket } from "@/lib/mock-data"
 
@@ -43,6 +45,7 @@ export function TicketsModule() {
   const [ticketList, setTicketList] = useState<Ticket[]>(initialTickets)
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
 
   const filtered = ticketList.filter((t) =>
     t.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -86,6 +89,70 @@ export function TicketsModule() {
     setDragOverCol(null)
   }
 
+
+  if (selectedTicket) {
+    const property = properties.find((p) => p.id === selectedTicket.propertyId)
+    const worker = selectedTicket.assignedTo ? workers.find((w) => w.id === selectedTicket.assignedTo) : null
+
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" size="sm" onClick={() => setSelectedTicket(null)}>
+          <ArrowLeft className="size-4 mr-1" /> Terug naar Tickets
+        </Button>
+
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">{selectedTicket.title}</h2>
+            <p className="text-muted-foreground">{property?.name} &middot; {selectedTicket.tenantName}</p>
+          </div>
+          <div className="flex gap-2">
+            <Badge variant="outline" className={priorityColors[selectedTicket.priority]}>{priorityLabels[selectedTicket.priority]}</Badge>
+            <Badge variant="secondary">{categoryLabels[selectedTicket.category]}</Badge>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader><CardTitle>Details</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between"><span className="text-muted-foreground">Beschrijving</span></div>
+              <p className="text-sm">{selectedTicket.description}</p>
+              <Separator />
+              <div className="flex justify-between"><span className="text-muted-foreground">Aangemaakt</span><span className="text-sm font-medium">{new Date(selectedTicket.createdAt).toLocaleDateString("nl-BE")} {new Date(selectedTicket.createdAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Laatst bijgewerkt</span><span className="text-sm font-medium">{new Date(selectedTicket.updatedAt).toLocaleDateString("nl-BE")} {new Date(selectedTicket.updatedAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Pand</span><span className="text-sm font-medium">{property?.name}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Adres</span><span className="text-sm font-medium">{property?.address}, {property?.city}</span></div>
+              {worker && <div className="flex justify-between"><span className="text-muted-foreground">Toegewezen aan</span><span className="text-sm font-medium">{worker.name} ({worker.phone})</span></div>}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Camera className="size-5" /> Foto&apos;s &amp; Documenten</CardTitle></CardHeader>
+            <CardContent>
+              <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground">
+                <Camera className="size-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Sleep foto&apos;s of documenten hierheen</p>
+                <p className="text-xs mt-1">PV politie, foto&apos;s schade, offertes, ...</p>
+                <Button size="sm" variant="outline" className="mt-3">Bestanden Uploaden</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader><CardTitle>Activiteitenlog</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex gap-3 text-sm"><div className="size-2 rounded-full bg-blue-500 mt-1.5 shrink-0" /><div><span className="font-medium">Ticket aangemaakt</span> door {selectedTicket.tenantName}<br /><span className="text-xs text-muted-foreground">{new Date(selectedTicket.createdAt).toLocaleDateString("nl-BE")}</span></div></div>
+              {worker && <div className="flex gap-3 text-sm"><div className="size-2 rounded-full bg-orange-500 mt-1.5 shrink-0" /><div><span className="font-medium">Toegewezen aan</span> {worker.name}<br /><span className="text-xs text-muted-foreground">{new Date(selectedTicket.updatedAt).toLocaleDateString("nl-BE")}</span></div></div>}
+              {selectedTicket.status === "resolved" && <div className="flex gap-3 text-sm"><div className="size-2 rounded-full bg-green-500 mt-1.5 shrink-0" /><div><span className="font-medium">Opgelost</span><br /><span className="text-xs text-muted-foreground">{new Date(selectedTicket.updatedAt).toLocaleDateString("nl-BE")}</span></div></div>}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -94,6 +161,7 @@ export function TicketsModule() {
       </div>
 
       <div className="flex gap-3">
+        <Button><Plus className="size-4 mr-2" /> Nieuw Ticket</Button>
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input placeholder="Zoek tickets..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
@@ -134,6 +202,7 @@ export function TicketsModule() {
                     <Card
                       key={ticket.id}
                       draggable
+                      onClick={() => setSelectedTicket(ticket)}
                       onDragStart={(e) => handleDragStart(e, ticket.id)}
                       onDragEnd={handleDragEnd}
                       className={`cursor-grab active:cursor-grabbing transition-all duration-200 ${

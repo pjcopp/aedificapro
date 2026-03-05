@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Building2, Bed, Bath, Ruler, Home, Store, FolderArchive, FileText, Upload } from "lucide-react"
+import { Search, Building2, Bed, Bath, Ruler, Home, Store, FolderArchive, FileText, Upload, Shield } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { properties, asBuiltDocuments } from "@/lib/mock-data"
+import { properties, asBuiltDocuments, insurancePolicies } from "@/lib/mock-data"
 import type { Property } from "@/lib/mock-data"
 import { ContractView } from "./contracts"
 
@@ -15,12 +15,14 @@ const statusLabels: Record<string, string> = {
   occupied: "Verhuurd",
   available: "Beschikbaar",
   maintenance: "Onderhoud",
+  new: "Nieuw",
 }
 
 const statusBarColors: Record<string, string> = {
   occupied: "bg-emerald-200 dark:bg-emerald-900/40",
   available: "bg-blue-200 dark:bg-blue-900/40",
   maintenance: "bg-amber-200 dark:bg-amber-900/40",
+  new: "bg-purple-200 dark:bg-purple-900/40",
 }
 
 const typeLabels: Record<string, string> = {
@@ -61,7 +63,7 @@ export function PropertiesModule() {
     return (
       <div className="space-y-6">
         <Button variant="ghost" size="sm" onClick={() => { setSelectedProperty(null); setShowContract(false) }}>
-          &larr; Terug naar Vastgoed
+          &larr; Terug naar Panden
         </Button>
 
         {/* Header */}
@@ -231,6 +233,39 @@ export function PropertiesModule() {
           </Card>
         )}
 
+        {/* Verzekeringen */}
+        {(() => {
+          const propInsurance = insurancePolicies.filter((i) => i.propertyId === selectedProperty.id)
+          return propInsurance.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="size-5" />
+                  Verzekeringen
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {propInsurance.map((ins) => (
+                    <div key={ins.id} className="rounded-lg border p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{ins.type}</span>
+                        <Badge variant="secondary" className="text-xs">{ins.holder === "owner" ? "Eigenaar" : "Huurder"}</Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div className="flex justify-between"><span>Verzekeraar</span><span className="font-medium text-foreground">{ins.company}</span></div>
+                        <div className="flex justify-between"><span>Polisnr.</span><span className="font-medium text-foreground">{ins.policyNumber}</span></div>
+                        <div className="flex justify-between"><span>Premie</span><span className="font-medium text-foreground">&euro;{ins.annualPremium}/jaar</span></div>
+                        <div className="flex justify-between"><span>Geldig</span><span className="font-medium text-foreground">{ins.startDate} &rarr; {ins.endDate}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null
+        })()}
+
         {/* As-Built Documents */}
         <Card>
           <CardHeader>
@@ -277,8 +312,8 @@ export function PropertiesModule() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Vastgoed</h2>
-        <p className="text-muted-foreground">Beheer uw vastgoedportefeuille</p>
+        <h2 className="text-2xl font-bold tracking-tight">Panden</h2>
+        <p className="text-muted-foreground">Beheer uw pandenportefeuille</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -293,6 +328,7 @@ export function PropertiesModule() {
             <SelectItem value="occupied">Verhuurd</SelectItem>
             <SelectItem value="available">Beschikbaar</SelectItem>
             <SelectItem value="maintenance">Onderhoud</SelectItem>
+            <SelectItem value="new">Nieuw</SelectItem>
           </SelectContent>
         </Select>
         <Button>+ Pand Toevoegen</Button>

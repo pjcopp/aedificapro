@@ -9,12 +9,14 @@ const statusColors: Record<string, string> = {
   occupied: "#374151",
   available: "#6b7280",
   maintenance: "#9ca3af",
+  new: "#7c3aed",
 }
 
 const statusLabels: Record<string, string> = {
   occupied: "Verhuurd",
   available: "Beschikbaar",
   maintenance: "Onderhoud",
+  new: "Nieuw",
 }
 
 export function PropertyMapModule() {
@@ -90,7 +92,7 @@ export function PropertyMapModule() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Vastgoedkaart</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Pandenkaart</h2>
         <p className="text-muted-foreground">Geografisch overzicht van uw portefeuille</p>
       </div>
 

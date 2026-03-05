@@ -9,7 +9,7 @@ export type Property = {
   bathrooms: number
   sqm: number
   monthlyRent: number
-  status: "occupied" | "available" | "maintenance"
+  status: "occupied" | "available" | "maintenance" | "new"
   tenant: Tenant | null
   totalRevenue: number
   imageGradient: string
@@ -17,6 +17,7 @@ export type Property = {
   lng: number
   leaseStart: string | null
   leaseEnd: string | null
+  ownerId: string
   utilities: Utility[]
 }
 
@@ -130,6 +131,45 @@ export type AsBuiltDocument = {
   category: string
 }
 
+export type Owner = {
+  id: string
+  name: string
+  email: string
+  phone: string
+  company: string | null
+  monthlyFee: number
+  repairMandate: number
+  notes: string
+  propertyIds: string[]
+}
+
+export type CandidateTenant = {
+  id: string
+  name: string
+  email: string
+  phone: string
+  familySituation: string
+  monthlyIncome: number
+  pets: string | null
+  status: "pending" | "approved" | "rejected"
+  appliedForId: string
+  notes: string
+  appliedAt: string
+}
+
+export type InsurancePolicy = {
+  id: string
+  propertyId: string
+  holder: "owner" | "tenant"
+  holderName: string
+  company: string
+  policyNumber: string
+  type: string
+  annualPremium: number
+  startDate: string
+  endDate: string
+}
+
 export const properties: Property[] = [
   {
     id: "p1",
@@ -145,6 +185,7 @@ export const properties: Property[] = [
     status: "occupied",
     totalRevenue: 32400,
     imageGradient: "from-amber-400 to-orange-600",
+    ownerId: "o1",
     lat: 50.8467,
     lng: 4.3525,
     leaseStart: "2024-06-01",
@@ -180,6 +221,7 @@ export const properties: Property[] = [
     status: "occupied",
     totalRevenue: 22800,
     imageGradient: "from-blue-400 to-indigo-600",
+    ownerId: "o1",
     lat: 51.2194,
     lng: 4.4025,
     leaseStart: "2025-01-01",
@@ -214,6 +256,7 @@ export const properties: Property[] = [
     status: "available",
     totalRevenue: 39600,
     imageGradient: "from-emerald-400 to-teal-600",
+    ownerId: "o2",
     lat: 51.0543,
     lng: 3.7247,
     leaseStart: null,
@@ -240,6 +283,7 @@ export const properties: Property[] = [
     status: "occupied",
     totalRevenue: 43200,
     imageGradient: "from-violet-400 to-purple-600",
+    ownerId: "o2",
     lat: 50.8798,
     lng: 4.7005,
     leaseStart: "2024-03-01",
@@ -275,6 +319,7 @@ export const properties: Property[] = [
     status: "maintenance",
     totalRevenue: 26400,
     imageGradient: "from-rose-400 to-pink-600",
+    ownerId: "o3",
     lat: 51.2093,
     lng: 3.2247,
     leaseStart: "2024-09-01",
@@ -310,6 +355,7 @@ export const properties: Property[] = [
     status: "occupied",
     totalRevenue: 67200,
     imageGradient: "from-cyan-400 to-blue-600",
+    ownerId: "o3",
     lat: 50.6451,
     lng: 5.5734,
     leaseStart: "2023-01-01",
@@ -330,6 +376,28 @@ export const properties: Property[] = [
       { name: "Gas", monthlyCost: 150 },
       { name: "Internet", monthlyCost: 85 },
     ],
+  },
+  {
+    id: "p7",
+    name: "Nieuwbouw Mechelen",
+    address: "Grote Markt 35",
+    city: "Mechelen",
+    zipCode: "2800",
+    type: "apartment",
+    bedrooms: 2,
+    bathrooms: 1,
+    sqm: 92,
+    monthlyRent: 1250,
+    status: "new",
+    totalRevenue: 0,
+    imageGradient: "from-slate-400 to-gray-600",
+    ownerId: "o1",
+    lat: 51.0259,
+    lng: 4.4776,
+    leaseStart: null,
+    leaseEnd: null,
+    tenant: null,
+    utilities: [],
   },
 ]
 
@@ -581,4 +649,35 @@ export const analyticsData = {
     { category: "Prijs/kwaliteit", score: 3.9 },
     { category: "Algemeen", score: 4.1 },
   ],
+}
+
+
+export const owners: Owner[] = [
+  { id: "o1", name: "Marc Van den Berg", email: "marc.vdberg@email.be", phone: "+32 470 99 11 22", company: "VDB Vastgoed BVBA", monthlyFee: 150, repairMandate: 500, notes: "Maandelijkse rapportage vereist. Voorkeur voor e-mail communicatie.", propertyIds: ["p1", "p2", "p7"] },
+  { id: "o2", name: "Catherine Dubois", email: "c.dubois@email.be", phone: "+32 471 88 22 33", company: null, monthlyFee: 120, repairMandate: 300, notes: "Altijd telefonisch bereikbaar. Wil goedkeuring voor elke reparatie boven mandaat.", propertyIds: ["p3", "p4"] },
+  { id: "o3", name: "Famille De Ridder", email: "deridder.immo@email.be", phone: "+32 472 77 33 44", company: "De Ridder Investments NV", monthlyFee: 200, repairMandate: 1000, notes: "Professionele investeerder. Kwartaalrapportage. Hoog mandaat voor snelle afhandeling.", propertyIds: ["p5", "p6"] },
+]
+
+export const candidateTenants: CandidateTenant[] = [
+  { id: "ct1", name: "Lien Wouters", email: "lien.wouters@email.be", phone: "+32 470 11 22 33", familySituation: "Samenwonend, geen kinderen", monthlyIncome: 3200, pets: null, status: "pending", appliedForId: "p3", notes: "Beide partners werken voltijds. Goede referenties vorige verhuurder.", appliedAt: "2026-03-01" },
+  { id: "ct2", name: "Ahmed El Mansouri", email: "ahmed.elm@email.be", phone: "+32 471 22 33 44", familySituation: "Alleenstaand", monthlyIncome: 2800, pets: "1 kat", status: "pending", appliedForId: "p3", notes: "IT-consultant, stabiel inkomen. Huisdier besproken met eigenaar.", appliedAt: "2026-03-02" },
+  { id: "ct3", name: "Joke & Bart Claessens", email: "claessens.jb@email.be", phone: "+32 472 33 44 55", familySituation: "Gehuwd, 2 kinderen (8 en 11)", monthlyIncome: 5500, pets: null, status: "approved", appliedForId: "p7", notes: "Zoeken grotere woning. Uitstekende betalingshistoriek bij huidige verhuurder.", appliedAt: "2026-02-20" },
+  { id: "ct4", name: "Nina De Graef", email: "nina.degraef@email.be", phone: "+32 473 44 55 66", familySituation: "Alleenstaande moeder, 1 kind (4)", monthlyIncome: 2400, pets: null, status: "rejected", appliedForId: "p3", notes: "Inkomen onvoldoende voor gevraagde huurprijs (norm: 3x huur).", appliedAt: "2026-02-15" },
+]
+
+export const insurancePolicies: InsurancePolicy[] = [
+  { id: "ins1", propertyId: "p1", holder: "owner", holderName: "Marc Van den Berg", company: "KBC Verzekeringen", policyNumber: "KBC-2024-001234", type: "Brand & Gebouw", annualPremium: 480, startDate: "2024-01-01", endDate: "2025-12-31" },
+  { id: "ins2", propertyId: "p1", holder: "tenant", holderName: "Emma Janssens", company: "Ethias", policyNumber: "ETH-2024-005678", type: "Huurdersaansprakelijkheid", annualPremium: 120, startDate: "2024-06-01", endDate: "2025-05-31" },
+  { id: "ins3", propertyId: "p4", holder: "owner", holderName: "Catherine Dubois", company: "AG Insurance", policyNumber: "AG-2024-009012", type: "Brand & Gebouw", annualPremium: 650, startDate: "2024-03-01", endDate: "2025-02-28" },
+  { id: "ins4", propertyId: "p4", holder: "tenant", holderName: "Sophie De Smet", company: "KBC Verzekeringen", policyNumber: "KBC-2024-003456", type: "Huurdersaansprakelijkheid", annualPremium: 135, startDate: "2024-03-01", endDate: "2025-02-28" },
+  { id: "ins5", propertyId: "p6", holder: "owner", holderName: "Famille De Ridder", company: "Baloise", policyNumber: "BAL-2023-007890", type: "Brand & Bedrijfsgebouw", annualPremium: 1200, startDate: "2023-01-01", endDate: "2025-12-31" },
+  { id: "ins6", propertyId: "p5", holder: "owner", holderName: "Famille De Ridder", company: "AXA Belgium", policyNumber: "AXA-2024-002345", type: "Brand & Gebouw", annualPremium: 420, startDate: "2024-09-01", endDate: "2025-08-31" },
+]
+
+export const paymentHistory: Record<string, { onTime: number; late: number; score: number }> = {
+  t1: { onTime: 20, late: 2, score: 91 },
+  t2: { onTime: 14, late: 0, score: 100 },
+  t3: { onTime: 22, late: 4, score: 85 },
+  t4: { onTime: 16, late: 5, score: 76 },
+  t5: { onTime: 36, late: 1, score: 97 },
 }

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { tenants, properties } from "@/lib/mock-data"
+import { tenants, properties, paymentHistory } from "@/lib/mock-data"
 
 export function TenantsModule() {
   const [search, setSearch] = useState("")
@@ -46,6 +46,7 @@ export function TenantsModule() {
                 <TableHead>Telefoon</TableHead>
                 <TableHead>E-mail</TableHead>
                 <TableHead>Inhuisdatum</TableHead>
+                <TableHead>Betalingsscore</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -71,6 +72,19 @@ export function TenantsModule() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5 text-sm"><Calendar className="size-3.5 text-muted-foreground" />{tenant.moveInDate}</div>
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const history = paymentHistory[tenant.id]
+                      if (!history) return <span className="text-xs text-muted-foreground">-</span>
+                      const color = history.score >= 90 ? "text-green-600 bg-green-500/10" : history.score >= 80 ? "text-orange-600 bg-orange-500/10" : "text-red-600 bg-red-500/10"
+                      return (
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${color}`}>{history.score}%</span>
+                          <span className="text-xs text-muted-foreground">{history.onTime}x op tijd, {history.late}x laat</span>
+                        </div>
+                      )
+                    })()}
                   </TableCell>
                 </TableRow>
               ))}

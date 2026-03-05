@@ -17,6 +17,8 @@ import {
   Bot,
   Building,
   Settings,
+  Briefcase,
+  UserPlus,
 } from "lucide-react"
 
 import {
@@ -44,9 +46,11 @@ type NavItem = {
 
 const mainNav: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "properties", label: "Vastgoed", icon: Building2 },
+  { id: "properties", label: "Panden", icon: Building2 },
+  { id: "owners", label: "Verhuurders", icon: Briefcase },
   { id: "tenants", label: "Huurders", icon: Users },
-  { id: "map", label: "Vastgoedkaart", icon: MapPin },
+  { id: "candidates", label: "Kandidaten", icon: UserPlus },
+  { id: "map", label: "Pandenkaart", icon: MapPin },
 ]
 
 const managementNav: NavItem[] = [
@@ -119,7 +123,7 @@ export function AppSidebar({ activeModule, onModuleChange, customerLogo, onLogoC
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">AedificaPro</span>
-                    <span className="truncate text-xs text-muted-foreground">Vastgoedbeheer</span>
+                    <span className="truncate text-xs text-muted-foreground">Pandenbeheer</span>
                   </div>
                 </div>
               )}
