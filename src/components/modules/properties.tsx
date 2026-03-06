@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Building2, Bed, Bath, Ruler, Home, Store, FolderArchive, FileText, Upload, Shield } from "lucide-react"
+import { Search, Building2, Bed, Bath, Ruler, Home, Store, FolderArchive, FileText, Upload, Shield, ChevronRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { properties, asBuiltDocuments, insurancePolicies } from "@/lib/mock-data"
 import type { Property } from "@/lib/mock-data"
@@ -19,10 +20,17 @@ const statusLabels: Record<string, string> = {
 }
 
 const statusBarColors: Record<string, string> = {
-  occupied: "bg-emerald-200 dark:bg-emerald-900/40",
-  available: "bg-blue-200 dark:bg-blue-900/40",
-  maintenance: "bg-amber-200 dark:bg-amber-900/40",
-  new: "bg-purple-200 dark:bg-purple-900/40",
+  occupied: "bg-emerald-50 dark:bg-emerald-950/30",
+  available: "bg-blue-50 dark:bg-blue-950/30",
+  maintenance: "bg-amber-50 dark:bg-amber-950/30",
+  new: "bg-purple-50 dark:bg-purple-950/30",
+}
+
+const statusDotColors: Record<string, string> = {
+  occupied: "bg-emerald-500",
+  available: "bg-blue-500",
+  maintenance: "bg-amber-500",
+  new: "bg-purple-500",
 }
 
 const typeLabels: Record<string, string> = {
@@ -32,11 +40,19 @@ const typeLabels: Record<string, string> = {
   commercial: "Commercieel",
 }
 
+const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  apartment: Building2,
+  house: Home,
+  studio: Bed,
+  commercial: Store,
+}
+
 export function PropertiesModule() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [showContract, setShowContract] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
 
   const filtered = properties.filter((p) => {
     const matchesSearch =
@@ -331,55 +347,134 @@ export function PropertiesModule() {
             <SelectItem value="new">Nieuw</SelectItem>
           </SelectContent>
         </Select>
-        <Button>+ Pand Toevoegen</Button>
+        <Button onClick={() => setAddOpen(true)}>+ Pand Toevoegen</Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((property) => (
-          <Card
-            key={property.id}
-            className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:border-foreground/20 overflow-hidden"
-            onClick={() => setSelectedProperty(property)}
-          >
-            <div className={`h-1 ${statusBarColors[property.status]}`} />
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold group-hover:text-primary transition-colors">
-                    {property.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {property.address}, {property.city}
-                  </p>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {filtered.map((property) => {
+          const TypeIcon = typeIcons[property.type] || Building2
+          return (
+            <Card
+              key={property.id}
+              className={`group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 overflow-hidden ${statusBarColors[property.status]}`}
+              onClick={() => setSelectedProperty(property)}
+            >
+              <CardContent className="p-0">
+                {/* Header - Name + Status */}
+                <div className="flex items-start justify-between p-4 pb-2">
+                  <div>
+                    <h3 className="font-bold group-hover:text-primary transition-colors">
+                      {property.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {property.address}, {property.city}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                    <div className={`size-2 rounded-full ${statusDotColors[property.status]}`} />
+                    <span className="text-xs font-medium">{statusLabels[property.status]}</span>
+                  </div>
                 </div>
-                <Badge variant="secondary" className="text-xs shrink-0">
-                  {statusLabels[property.status]}
-                </Badge>
-              </div>
-              <div className="flex gap-4 text-sm text-muted-foreground mb-3">
-                <span className="flex items-center gap-1"><Bed className="size-3.5" /> {property.bedrooms}</span>
-                <span className="flex items-center gap-1"><Bath className="size-3.5" /> {property.bathrooms}</span>
-                <span className="flex items-center gap-1"><Ruler className="size-3.5" /> {property.sqm}m&sup2;</span>
-              </div>
-              <div className="flex items-center justify-between border-t pt-3">
-                <div>
-                  <p className="text-lg font-bold">
-                    &euro;{property.monthlyRent.toLocaleString()}
-                    <span className="text-sm font-normal text-muted-foreground">/mnd</span>
-                  </p>
+
+                {/* Center Icon */}
+                <div className="flex items-center justify-center py-6">
+                  <div className="flex size-20 items-center justify-center rounded-xl bg-muted/60">
+                    <TypeIcon className="size-10 text-muted-foreground/60" />
+                  </div>
                 </div>
-                <div className="text-right">
-                  {property.tenant ? (
-                    <p className="text-sm text-muted-foreground">{property.tenant.name}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">Geen huurder</p>
-                  )}
+
+                {/* Info Rows */}
+                <div className="space-y-0 border-t mx-4">
+                  <div className="flex items-center justify-between py-2.5 border-b border-border/50">
+                    <span className="text-sm text-muted-foreground">Huurprijs</span>
+                    <span className="text-sm font-bold">&#x20AC;{property.monthlyRent.toLocaleString()}/mnd</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2.5 border-b border-border/50">
+                    <span className="text-sm text-muted-foreground">Type</span>
+                    <span className="text-sm font-semibold">{typeLabels[property.type]}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="text-sm text-muted-foreground">Huurder</span>
+                    <span className="text-sm font-semibold">{property.tenant ? property.tenant.name : "Geen"}</span>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+
+                {/* Footer */}
+                <div className="flex items-center justify-between px-4 py-3 mt-1 border-t text-sm text-muted-foreground group-hover:text-primary transition-colors">
+                  <span>Bekijk details</span>
+                  <ChevronRight className="size-4" />
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
+
+      {/* Pand Toevoegen Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nieuw Pand Toevoegen</DialogTitle>
+            <DialogDescription>Vul de gegevens in van het nieuwe pand</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Pandnaam</label>
+              <Input placeholder="Bijv. Appartement Grote Markt" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Adres</label>
+                <Input placeholder="Straat + nummer" />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Stad</label>
+                <Input placeholder="Bijv. Brussel" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Postcode</label>
+                <Input placeholder="Bijv. 1000" />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Type</label>
+                <Select defaultValue="apartment">
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="apartment">Appartement</SelectItem>
+                    <SelectItem value="house">Huis</SelectItem>
+                    <SelectItem value="studio">Studio</SelectItem>
+                    <SelectItem value="commercial">Commercieel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Slaapkamers</label>
+                <Input type="number" placeholder="0" />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Badkamers</label>
+                <Input type="number" placeholder="0" />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Oppervlakte (m2)</label>
+                <Input type="number" placeholder="0" />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Maandelijkse huurprijs (&#x20AC;)</label>
+              <Input type="number" placeholder="0" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>Annuleren</Button>
+            <Button onClick={() => { setAddOpen(false); alert("Pand toegevoegd! (demo)") }}>Pand Toevoegen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
