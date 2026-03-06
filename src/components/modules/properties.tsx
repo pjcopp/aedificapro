@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Building2, Bed, Bath, Ruler, Home, Store, FolderArchive, FileText, Upload, Shield, ChevronRight, ClipboardCheck, Camera, Clock, AlertTriangle, CheckCircle2, AlertCircle, XCircle, Plus, ChevronDown, ChevronUp, Eye, X, ImageIcon } from "lucide-react"
+import { Search, Building2, Bed, Bath, Ruler, Home, Store, FolderArchive, FileText, Upload, Shield, ChevronRight, ClipboardCheck, Camera, Clock, AlertTriangle, CheckCircle2, AlertCircle, XCircle, Plus, ChevronDown, ChevronUp, Eye, X, ImageIcon, MapPin } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -20,18 +20,11 @@ const statusLabels: Record<string, string> = {
   new: "Nieuw",
 }
 
-const statusBarColors: Record<string, string> = {
-  occupied: "bg-emerald-50 dark:bg-emerald-950/30",
-  available: "bg-blue-50 dark:bg-blue-950/30",
-  maintenance: "bg-amber-50 dark:bg-amber-950/30",
-  new: "bg-purple-50 dark:bg-purple-950/30",
-}
-
-const statusDotColors: Record<string, string> = {
-  occupied: "bg-emerald-500",
-  available: "bg-blue-500",
-  maintenance: "bg-amber-500",
-  new: "bg-purple-500",
+const statusColors: Record<string, { badge: string; dot: string }> = {
+  occupied: { badge: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20", dot: "bg-emerald-500" },
+  available: { badge: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20", dot: "bg-blue-500" },
+  maintenance: { badge: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20", dot: "bg-amber-500" },
+  new: { badge: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20", dot: "bg-purple-500" },
 }
 
 const typeLabels: Record<string, string> = {
@@ -71,7 +64,6 @@ function InspectionDetail({ inspection, onBack, inspectionPhotos, onUploadPhoto 
   const [expandedRoom, setExpandedRoom] = useState<string | null>(null)
   const [photoViewItem, setPhotoViewItem] = useState<InspectionItem | null>(null)
 
-  // Group items by room
   const rooms = inspection.items.reduce((acc, item) => {
     if (!acc[item.room]) acc[item.room] = []
     acc[item.room].push(item)
@@ -97,49 +89,24 @@ function InspectionDetail({ inspection, onBack, inspectionPhotos, onUploadPhoto 
         </Badge>
       </div>
 
-      {/* Summary cards */}
       <div className="grid gap-3 grid-cols-3">
-        <Card>
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold">{totalItems}</p>
-            <p className="text-xs text-muted-foreground">Totaal items</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-green-600">{goodItems}</p>
-            <p className="text-xs text-muted-foreground">In orde</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-orange-600">{defectItems}</p>
-            <p className="text-xs text-muted-foreground">Gebreken</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{totalItems}</p><p className="text-xs text-muted-foreground">Totaal items</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-green-600">{goodItems}</p><p className="text-xs text-muted-foreground">In orde</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-orange-600">{defectItems}</p><p className="text-xs text-muted-foreground">Gebreken</p></CardContent></Card>
       </div>
 
-      {/* Room-based checklist */}
       <div className="space-y-2">
         {Object.entries(rooms).map(([room, items]) => {
           const isExpanded = expandedRoom === room
           const roomDefects = items.filter((i) => i.condition !== "goed").length
-
           return (
             <Card key={room}>
-              <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => setExpandedRoom(isExpanded ? null : room)}
-              >
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setExpandedRoom(isExpanded ? null : room)}>
                 <div className="flex items-center gap-3">
                   <Home className="size-4 text-muted-foreground" />
                   <span className="font-medium">{room}</span>
                   <Badge variant="outline" className="text-xs">{items.length} items</Badge>
-                  {roomDefects > 0 && (
-                    <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">
-                      {roomDefects} {roomDefects === 1 ? "gebrek" : "gebreken"}
-                    </Badge>
-                  )}
+                  {roomDefects > 0 && <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">{roomDefects} {roomDefects === 1 ? "gebrek" : "gebreken"}</Badge>}
                 </div>
                 {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
               </div>
@@ -152,7 +119,6 @@ function InspectionDetail({ inspection, onBack, inspectionPhotos, onUploadPhoto 
                       const CondIcon = config.icon
                       const photos = inspectionPhotos[item.id] || []
                       const totalPhotos = item.photoCount + photos.length
-
                       return (
                         <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border">
                           <CondIcon className={`size-5 mt-0.5 shrink-0 ${item.condition === "goed" ? "text-green-500" : item.condition === "licht gebrek" ? "text-yellow-500" : item.condition === "gebrek" ? "text-orange-500" : "text-red-500"}`} />
@@ -163,16 +129,9 @@ function InspectionDetail({ inspection, onBack, inspectionPhotos, onUploadPhoto 
                             </div>
                             <p className="text-sm text-muted-foreground">{item.description}</p>
                             <div className="flex items-center gap-3 mt-2">
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="size-3" />
-                                {new Date(item.timestamp).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}
-                              </span>
-                              <button
-                                className="text-xs flex items-center gap-1 text-primary hover:underline"
-                                onClick={() => setPhotoViewItem(item)}
-                              >
-                                <Camera className="size-3" />
-                                {totalPhotos} foto{totalPhotos !== 1 ? "s" : ""}
+                              <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="size-3" />{new Date(item.timestamp).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}</span>
+                              <button className="text-xs flex items-center gap-1 text-primary hover:underline" onClick={() => setPhotoViewItem(item)}>
+                                <Camera className="size-3" />{totalPhotos} foto{totalPhotos !== 1 ? "s" : ""}
                               </button>
                             </div>
                           </div>
@@ -187,38 +146,24 @@ function InspectionDetail({ inspection, onBack, inspectionPhotos, onUploadPhoto 
         })}
       </div>
 
-      {/* Photo Viewer Dialog */}
       <Dialog open={!!photoViewItem} onOpenChange={() => setPhotoViewItem(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Camera className="size-5" />
-              Foto&#39;s - {photoViewItem?.room} / {photoViewItem?.element}
-            </DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Camera className="size-5" />Foto&#39;s - {photoViewItem?.room} / {photoViewItem?.element}</DialogTitle>
             <DialogDescription>
-              {photoViewItem && (
-                <Badge variant="outline" className={conditionConfig[photoViewItem.condition].color}>
-                  {conditionConfig[photoViewItem.condition].label}
-                </Badge>
-              )}
+              {photoViewItem && <Badge variant="outline" className={conditionConfig[photoViewItem.condition].color}>{conditionConfig[photoViewItem.condition].label}</Badge>}
             </DialogDescription>
           </DialogHeader>
           {photoViewItem && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">{photoViewItem.description}</p>
-
-              {/* Uploaded photos */}
               {(inspectionPhotos[photoViewItem.id]?.length > 0) && (
                 <div className="grid gap-3 grid-cols-2">
                   {inspectionPhotos[photoViewItem.id].map((url, idx) => (
-                    <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border">
-                      <img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
-                    </div>
+                    <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border"><img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" /></div>
                   ))}
                 </div>
               )}
-
-              {/* Placeholder for demo photos */}
               {(!inspectionPhotos[photoViewItem.id] || inspectionPhotos[photoViewItem.id].length === 0) && (
                 <div className="grid gap-3 grid-cols-2">
                   {Array.from({ length: photoViewItem.photoCount }).map((_, idx) => (
@@ -230,27 +175,15 @@ function InspectionDetail({ inspection, onBack, inspectionPhotos, onUploadPhoto 
                   ))}
                 </div>
               )}
-
-              {/* Upload button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const input = document.createElement("input")
-                  input.type = "file"
-                  input.accept = "image/*"
-                  input.multiple = true
-                  input.onchange = (ev) => {
-                    const files = (ev.target as HTMLInputElement).files
-                    if (files && photoViewItem) {
-                      Array.from(files).forEach((file) => {
-                        onUploadPhoto(photoViewItem.id, URL.createObjectURL(file))
-                      })
-                    }
-                  }
-                  input.click()
-                }}
-              >
+              <Button variant="outline" size="sm" onClick={() => {
+                const input = document.createElement("input")
+                input.type = "file"; input.accept = "image/*"; input.multiple = true
+                input.onchange = (ev) => {
+                  const files = (ev.target as HTMLInputElement).files
+                  if (files && photoViewItem) { Array.from(files).forEach((file) => { onUploadPhoto(photoViewItem.id, URL.createObjectURL(file)) }) }
+                }
+                input.click()
+              }}>
                 <Upload className="size-4 mr-2" /> Foto&#39;s Toevoegen
               </Button>
             </div>
@@ -270,45 +203,38 @@ export function PropertiesModule() {
   const [addOpen, setAddOpen] = useState(false)
   const [selectedInspection, setSelectedInspection] = useState<PropertyInspection | null>(null)
   const [inspectionPhotos, setInspectionPhotos] = useState<Record<string, string[]>>({})
+  const [propertyImages, setPropertyImages] = useState<Record<string, string>>({})
 
   const handleUploadPhoto = (itemId: string, url: string) => {
-    setInspectionPhotos((prev) => ({
-      ...prev,
-      [itemId]: [...(prev[itemId] || []), url],
-    }))
+    setInspectionPhotos((prev) => ({ ...prev, [itemId]: [...(prev[itemId] || []), url] }))
+  }
+
+  const handlePropertyImage = (propertyId: string) => {
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept = "image/*"
+    input.onchange = (ev) => {
+      const file = (ev.target as HTMLInputElement).files?.[0]
+      if (file) setPropertyImages((prev) => ({ ...prev, [propertyId]: URL.createObjectURL(file) }))
+    }
+    input.click()
   }
 
   const filtered = properties.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.address.toLowerCase().includes(search.toLowerCase()) ||
-      p.city.toLowerCase().includes(search.toLowerCase())
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.address.toLowerCase().includes(search.toLowerCase()) || p.city.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === "all" || p.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
   if (selectedProperty && showContract && selectedProperty.tenant) {
-    return (
-      <ContractView
-        property={selectedProperty}
-        onBack={() => setShowContract(false)}
-        backLabel="Terug naar Pandgegevens"
-      />
-    )
+    return <ContractView property={selectedProperty} onBack={() => setShowContract(false)} backLabel="Terug naar Pandgegevens" />
   }
 
   if (selectedProperty && selectedInspection) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" size="sm" onClick={() => setSelectedInspection(null)}>
-          &larr; Terug naar Pandgegevens
-        </Button>
-        <InspectionDetail
-          inspection={selectedInspection}
-          onBack={() => setSelectedInspection(null)}
-          inspectionPhotos={inspectionPhotos}
-          onUploadPhoto={handleUploadPhoto}
-        />
+        <Button variant="ghost" size="sm" onClick={() => setSelectedInspection(null)}>&larr; Terug naar Pandgegevens</Button>
+        <InspectionDetail inspection={selectedInspection} onBack={() => setSelectedInspection(null)} inspectionPhotos={inspectionPhotos} onUploadPhoto={handleUploadPhoto} />
       </div>
     )
   }
@@ -319,80 +245,31 @@ export function PropertiesModule() {
 
     return (
       <div className="space-y-6">
-        <Button variant="ghost" size="sm" onClick={() => { setSelectedProperty(null); setShowContract(false) }}>
-          &larr; Terug naar Panden
-        </Button>
+        <Button variant="ghost" size="sm" onClick={() => { setSelectedProperty(null); setShowContract(false) }}>&larr; Terug naar Panden</Button>
 
-        {/* Header */}
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-2xl font-bold">{selectedProperty.name}</h2>
-            <p className="text-muted-foreground">
-              {selectedProperty.address}, {selectedProperty.zipCode} {selectedProperty.city}
-            </p>
+            <p className="text-muted-foreground">{selectedProperty.address}, {selectedProperty.zipCode} {selectedProperty.city}</p>
           </div>
           <Badge variant="secondary">{statusLabels[selectedProperty.status]}</Badge>
         </div>
 
-        {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Maandelijkse Huur</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">&euro;{selectedProperty.monthlyRent.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Jaarlijkse Inkomsten</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                &euro;{(selectedProperty.monthlyRent * 12).toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Totale Inkomsten</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                &euro;{selectedProperty.totalRevenue.toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Maandelijkse Huur</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">&euro;{selectedProperty.monthlyRent.toLocaleString()}</div></CardContent></Card>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Jaarlijkse Inkomsten</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">&euro;{(selectedProperty.monthlyRent * 12).toLocaleString()}</div></CardContent></Card>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Totale Inkomsten</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">&euro;{selectedProperty.totalRevenue.toLocaleString()}</div></CardContent></Card>
         </div>
 
-        {/* Property Details + Tenant */}
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader><CardTitle>Pandgegevens</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Type</span>
-                <span className="font-medium">{typeLabels[selectedProperty.type]}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Oppervlakte</span>
-                <span className="font-medium">{selectedProperty.sqm} m&sup2;</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Slaapkamers</span>
-                <span className="font-medium">{selectedProperty.bedrooms}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Badkamers</span>
-                <span className="font-medium">{selectedProperty.bathrooms}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Prijs per m&sup2;</span>
-                <span className="font-medium">
-                  &euro;{(selectedProperty.monthlyRent / selectedProperty.sqm).toFixed(2)}
-                </span>
-              </div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span className="font-medium">{typeLabels[selectedProperty.type]}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Oppervlakte</span><span className="font-medium">{selectedProperty.sqm} m&sup2;</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Slaapkamers</span><span className="font-medium">{selectedProperty.bedrooms}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Badkamers</span><span className="font-medium">{selectedProperty.bathrooms}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Prijs per m&sup2;</span><span className="font-medium">&euro;{(selectedProperty.monthlyRent / selectedProperty.sqm).toFixed(2)}</span></div>
             </CardContent>
           </Card>
           <Card>
@@ -400,72 +277,38 @@ export function PropertiesModule() {
             <CardContent>
               {selectedProperty.tenant ? (
                 <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Naam</span>
-                    <span className="font-medium">{selectedProperty.tenant.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">E-mail</span>
-                    <span className="font-medium">{selectedProperty.tenant.email}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Telefoon</span>
-                    <span className="font-medium">{selectedProperty.tenant.phone}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Huurstart</span>
-                    <span className="font-medium">{selectedProperty.leaseStart}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Huurende</span>
-                    <span className="font-medium">{selectedProperty.leaseEnd}</span>
-                  </div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Naam</span><span className="font-medium">{selectedProperty.tenant.name}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">E-mail</span><span className="font-medium">{selectedProperty.tenant.email}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Telefoon</span><span className="font-medium">{selectedProperty.tenant.phone}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Huurstart</span><span className="font-medium">{selectedProperty.leaseStart}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Huurende</span><span className="font-medium">{selectedProperty.leaseEnd}</span></div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                  <Building2 className="size-10 mb-2 opacity-50" />
-                  <p>Geen actieve huurder</p>
-                  <Button size="sm" className="mt-3">Te Huur Zetten</Button>
+                  <Building2 className="size-10 mb-2 opacity-50" /><p>Geen actieve huurder</p><Button size="sm" className="mt-3">Te Huur Zetten</Button>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Utilities */}
         {selectedProperty.utilities.length > 0 && (
           <Card>
             <CardHeader><CardTitle>Maandelijkse Nutsvoorzieningen</CardTitle></CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {selectedProperty.utilities.map((u) => (
-                  <div key={u.name} className="flex items-center justify-between rounded-lg border p-3">
-                    <span className="text-sm text-muted-foreground">{u.name}</span>
-                    <span className="font-medium">&euro;{u.monthlyCost}</span>
-                  </div>
-                ))}
+                {selectedProperty.utilities.map((u) => (<div key={u.name} className="flex items-center justify-between rounded-lg border p-3"><span className="text-sm text-muted-foreground">{u.name}</span><span className="font-medium">&euro;{u.monthlyCost}</span></div>))}
               </div>
-              <div className="mt-4 flex justify-between border-t pt-3">
-                <span className="font-medium">Totaal Nutsvoorzieningen</span>
-                <span className="font-bold">
-                  &euro;{selectedProperty.utilities.reduce((s, u) => s + u.monthlyCost, 0)}/maand
-                </span>
-              </div>
+              <div className="mt-4 flex justify-between border-t pt-3"><span className="font-medium">Totaal Nutsvoorzieningen</span><span className="font-bold">&euro;{selectedProperty.utilities.reduce((s, u) => s + u.monthlyCost, 0)}/maand</span></div>
             </CardContent>
           </Card>
         )}
 
-        {/* Plaatsbeschrijvingen */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck className="size-5" />
-                Plaatsbeschrijvingen
-              </CardTitle>
-              <Button size="sm" variant="outline">
-                <Plus className="size-4 mr-2" /> Nieuwe Inspectie
-              </Button>
+              <CardTitle className="flex items-center gap-2"><ClipboardCheck className="size-5" />Plaatsbeschrijvingen</CardTitle>
+              <Button size="sm" variant="outline"><Plus className="size-4 mr-2" /> Nieuwe Inspectie</Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -474,13 +317,8 @@ export function PropertiesModule() {
                 {propInspections.map((insp) => {
                   const defects = insp.items.filter((i) => i.condition !== "goed").length
                   const critical = insp.items.filter((i) => i.condition === "ernstig gebrek").length
-
                   return (
-                    <div
-                      key={insp.id}
-                      className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => setSelectedInspection(insp)}
-                    >
+                    <div key={insp.id} className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => setSelectedInspection(insp)}>
                       <div className="flex items-center gap-4">
                         <div className={`flex size-10 items-center justify-center rounded-lg ${insp.type === "intrede" ? "bg-blue-500/10" : insp.type === "uittrede" ? "bg-orange-500/10" : "bg-purple-500/10"}`}>
                           <ClipboardCheck className={`size-5 ${insp.type === "intrede" ? "text-blue-500" : insp.type === "uittrede" ? "text-orange-500" : "text-purple-500"}`} />
@@ -488,28 +326,18 @@ export function PropertiesModule() {
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="font-medium">{inspectionTypeLabels[insp.type]} plaatsbeschrijving</p>
-                            <Badge variant={insp.status === "voltooid" ? "default" : "secondary"} className="text-[10px]">
-                              {insp.status === "voltooid" ? "Voltooid" : "In behandeling"}
-                            </Badge>
+                            <Badge variant={insp.status === "voltooid" ? "default" : "secondary"} className="text-[10px]">{insp.status === "voltooid" ? "Voltooid" : "In behandeling"}</Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(insp.date).toLocaleDateString("nl-BE", { day: "numeric", month: "long", year: "numeric" })} - {insp.inspector}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{new Date(insp.date).toLocaleDateString("nl-BE", { day: "numeric", month: "long", year: "numeric" })} - {insp.inspector}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="text-right text-sm">
                           <p>{insp.items.length} items gecontroleerd</p>
                           <div className="flex items-center gap-2 justify-end">
-                            {defects > 0 && (
-                              <span className="text-orange-600 text-xs">{defects} {defects === 1 ? "gebrek" : "gebreken"}</span>
-                            )}
-                            {critical > 0 && (
-                              <span className="text-red-600 text-xs font-medium">{critical} ernstig</span>
-                            )}
-                            {defects === 0 && (
-                              <span className="text-green-600 text-xs">Alles in orde</span>
-                            )}
+                            {defects > 0 && <span className="text-orange-600 text-xs">{defects} {defects === 1 ? "gebrek" : "gebreken"}</span>}
+                            {critical > 0 && <span className="text-red-600 text-xs font-medium">{critical} ernstig</span>}
+                            {defects === 0 && <span className="text-green-600 text-xs">Alles in orde</span>}
                           </div>
                         </div>
                         <ChevronRight className="size-4 text-muted-foreground" />
@@ -520,70 +348,37 @@ export function PropertiesModule() {
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                <ClipboardCheck className="size-10 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">Nog geen plaatsbeschrijvingen voor dit pand</p>
-                <Button size="sm" variant="outline" className="mt-3">
-                  <Plus className="size-4 mr-2" /> Eerste Inspectie Aanmaken
-                </Button>
+                <ClipboardCheck className="size-10 mx-auto mb-2 opacity-30" /><p className="text-sm">Nog geen plaatsbeschrijvingen voor dit pand</p>
+                <Button size="sm" variant="outline" className="mt-3"><Plus className="size-4 mr-2" /> Eerste Inspectie Aanmaken</Button>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Contract */}
         {selectedProperty.tenant && selectedProperty.leaseStart && (
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="size-5" />
-                  Huurcontract
-                </CardTitle>
-                <Button size="sm" onClick={() => setShowContract(true)}>Bekijk Contract</Button>
-              </div>
-            </CardHeader>
+            <CardHeader><div className="flex items-center justify-between"><CardTitle className="flex items-center gap-2"><FileText className="size-5" />Huurcontract</CardTitle><Button size="sm" onClick={() => setShowContract(true)}>Bekijk Contract</Button></div></CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-muted-foreground">Referentie</span>
-                  <span className="font-medium text-sm">AEP-{selectedProperty.id.toUpperCase()}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-muted-foreground">Periode</span>
-                  <span className="font-medium text-sm">{selectedProperty.leaseStart} &rarr; {selectedProperty.leaseEnd}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-muted-foreground">Huurprijs</span>
-                  <span className="font-medium text-sm">&euro;{selectedProperty.monthlyRent.toLocaleString()}/mnd</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-muted-foreground">Huurder</span>
-                  <span className="font-medium text-sm">{selectedProperty.tenant.name}</span>
-                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3"><span className="text-sm text-muted-foreground">Referentie</span><span className="font-medium text-sm">AEP-{selectedProperty.id.toUpperCase()}</span></div>
+                <div className="flex items-center justify-between rounded-lg border p-3"><span className="text-sm text-muted-foreground">Periode</span><span className="font-medium text-sm">{selectedProperty.leaseStart} &rarr; {selectedProperty.leaseEnd}</span></div>
+                <div className="flex items-center justify-between rounded-lg border p-3"><span className="text-sm text-muted-foreground">Huurprijs</span><span className="font-medium text-sm">&euro;{selectedProperty.monthlyRent.toLocaleString()}/mnd</span></div>
+                <div className="flex items-center justify-between rounded-lg border p-3"><span className="text-sm text-muted-foreground">Huurder</span><span className="font-medium text-sm">{selectedProperty.tenant.name}</span></div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Verzekeringen */}
         {(() => {
           const propInsurance = insurancePolicies.filter((i) => i.propertyId === selectedProperty.id)
           return propInsurance.length > 0 ? (
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="size-5" />
-                  Verzekeringen
-                </CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Shield className="size-5" />Verzekeringen</CardTitle></CardHeader>
               <CardContent>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {propInsurance.map((ins) => (
                     <div key={ins.id} className="rounded-lg border p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{ins.type}</span>
-                        <Badge variant="secondary" className="text-xs">{ins.holder === "owner" ? "Eigenaar" : "Huurder"}</Badge>
-                      </div>
+                      <div className="flex items-center justify-between"><span className="font-medium text-sm">{ins.type}</span><Badge variant="secondary" className="text-xs">{ins.holder === "owner" ? "Eigenaar" : "Huurder"}</Badge></div>
                       <div className="text-xs text-muted-foreground space-y-1">
                         <div className="flex justify-between"><span>Verzekeraar</span><span className="font-medium text-foreground">{ins.company}</span></div>
                         <div className="flex justify-between"><span>Polisnr.</span><span className="font-medium text-foreground">{ins.policyNumber}</span></div>
@@ -598,42 +393,20 @@ export function PropertiesModule() {
           ) : null
         })()}
 
-        {/* As-Built Documents */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <FolderArchive className="size-5" />
-                Documenten (As-Built)
-              </CardTitle>
-              <Button size="sm" variant="outline">
-                <Upload className="size-4 mr-2" /> Document Uploaden
-              </Button>
-            </div>
-          </CardHeader>
+          <CardHeader><div className="flex items-center justify-between"><CardTitle className="flex items-center gap-2"><FolderArchive className="size-5" />Documenten (As-Built)</CardTitle><Button size="sm" variant="outline"><Upload className="size-4 mr-2" /> Document Uploaden</Button></div></CardHeader>
           <CardContent>
             {propertyDocs.length > 0 ? (
               <div className="grid gap-2 sm:grid-cols-2">
                 {propertyDocs.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer transition-colors"
-                  >
+                  <div key={doc.id} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer transition-colors">
                     <FileText className="size-4 text-muted-foreground shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{doc.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {doc.category} &middot; {doc.size} &middot; {doc.uploadedAt}
-                      </p>
-                    </div>
+                    <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{doc.name}</p><p className="text-xs text-muted-foreground">{doc.category} &middot; {doc.size} &middot; {doc.uploadedAt}</p></div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <FolderArchive className="size-10 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">Geen documenten beschikbaar voor dit pand</p>
-              </div>
+              <div className="text-center py-8 text-muted-foreground"><FolderArchive className="size-10 mx-auto mb-2 opacity-30" /><p className="text-sm">Geen documenten beschikbaar voor dit pand</p></div>
             )}
           </CardContent>
         </Card>
@@ -669,49 +442,65 @@ export function PropertiesModule() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.map((property) => {
           const TypeIcon = typeIcons[property.type] || Building2
+          const status = statusColors[property.status]
+          const hasImage = !!propertyImages[property.id]
+
           return (
             <Card
               key={property.id}
-              className={`group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 overflow-hidden ${statusBarColors[property.status]}`}
+              className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 overflow-hidden"
               onClick={() => setSelectedProperty(property)}
             >
               <CardContent className="p-0">
-                <div className="flex items-start justify-between p-4 pb-2">
-                  <div>
-                    <h3 className="font-bold group-hover:text-primary transition-colors">
-                      {property.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {property.address}, {property.city}
-                    </p>
+                {/* Property Image / Gradient Header */}
+                <div className="relative h-36 overflow-hidden">
+                  {hasImage ? (
+                    <img src={propertyImages[property.id]} alt={property.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${property.imageGradient} opacity-80 group-hover:opacity-90 transition-opacity`}>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <TypeIcon className="size-14 text-white/40" />
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute top-2.5 left-2.5">
+                    <Badge variant="outline" className={`text-[11px] backdrop-blur-sm bg-white/90 dark:bg-black/70 border ${status.badge}`}>
+                      <div className={`size-1.5 rounded-full ${status.dot} mr-1.5`} />
+                      {statusLabels[property.status]}
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                    <div className={`size-2 rounded-full ${statusDotColors[property.status]}`} />
-                    <span className="text-xs font-medium">{statusLabels[property.status]}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-center py-6">
-                  <div className="flex size-20 items-center justify-center rounded-xl bg-muted/60">
-                    <TypeIcon className="size-10 text-muted-foreground/60" />
-                  </div>
-                </div>
-                <div className="space-y-0 border-t mx-4">
-                  <div className="flex items-center justify-between py-2.5 border-b border-border/50">
-                    <span className="text-sm text-muted-foreground">Huurprijs</span>
-                    <span className="text-sm font-bold">&#x20AC;{property.monthlyRent.toLocaleString()}/mnd</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2.5 border-b border-border/50">
-                    <span className="text-sm text-muted-foreground">Type</span>
-                    <span className="text-sm font-semibold">{typeLabels[property.type]}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2.5">
-                    <span className="text-sm text-muted-foreground">Huurder</span>
-                    <span className="text-sm font-semibold">{property.tenant ? property.tenant.name : "Geen"}</span>
+                  <button
+                    className="absolute top-2.5 right-2.5 flex items-center justify-center size-8 rounded-full bg-black/40 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-black/60"
+                    onClick={(e) => { e.stopPropagation(); handlePropertyImage(property.id) }}
+                  >
+                    <Camera className="size-3.5" />
+                  </button>
+                  <div className="absolute bottom-2.5 right-2.5">
+                    <div className="text-sm font-bold backdrop-blur-sm bg-white/90 dark:bg-black/70 rounded-md px-2 py-0.5">&#x20AC;{property.monthlyRent.toLocaleString()}/mnd</div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between px-4 py-3 mt-1 border-t text-sm text-muted-foreground group-hover:text-primary transition-colors">
-                  <span>Bekijk details</span>
-                  <ChevronRight className="size-4" />
+
+                <div className="p-4">
+                  <h3 className="font-semibold text-[15px] group-hover:text-primary transition-colors leading-tight">{property.name}</h3>
+                  <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+                    <MapPin className="size-3 shrink-0" />
+                    <span className="truncate">{property.address}, {property.city}</span>
+                  </div>
+
+                  <Separator className="my-3" />
+
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <span className="flex items-center gap-1"><Bed className="size-3.5" /> {property.bedrooms}</span>
+                      <span className="flex items-center gap-1"><Bath className="size-3.5" /> {property.bathrooms}</span>
+                      <span className="flex items-center gap-1"><Ruler className="size-3.5" /> {property.sqm}m&sup2;</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t text-sm">
+                    <span className="text-muted-foreground">{property.tenant ? property.tenant.name : "Geen huurder"}</span>
+                    <ChevronRight className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -719,7 +508,6 @@ export function PropertiesModule() {
         })}
       </div>
 
-      {/* Pand Toevoegen Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -727,56 +515,24 @@ export function PropertiesModule() {
             <DialogDescription>Vul de gegevens in van het nieuwe pand</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Pandnaam</label>
-              <Input placeholder="Bijv. Appartement Grote Markt" />
+            <div className="grid gap-2"><label className="text-sm font-medium">Pandnaam</label><Input placeholder="Bijv. Appartement Grote Markt" /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2"><label className="text-sm font-medium">Adres</label><Input placeholder="Straat + nummer" /></div>
+              <div className="grid gap-2"><label className="text-sm font-medium">Stad</label><Input placeholder="Bijv. Brussel" /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Adres</label>
-                <Input placeholder="Straat + nummer" />
-              </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Stad</label>
-                <Input placeholder="Bijv. Brussel" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Postcode</label>
-                <Input placeholder="Bijv. 1000" />
-              </div>
+              <div className="grid gap-2"><label className="text-sm font-medium">Postcode</label><Input placeholder="Bijv. 1000" /></div>
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Type</label>
-                <Select defaultValue="apartment">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="apartment">Appartement</SelectItem>
-                    <SelectItem value="house">Huis</SelectItem>
-                    <SelectItem value="studio">Studio</SelectItem>
-                    <SelectItem value="commercial">Commercieel</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Select defaultValue="apartment"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="apartment">Appartement</SelectItem><SelectItem value="house">Huis</SelectItem><SelectItem value="studio">Studio</SelectItem><SelectItem value="commercial">Commercieel</SelectItem></SelectContent></Select>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Slaapkamers</label>
-                <Input type="number" placeholder="0" />
-              </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Badkamers</label>
-                <Input type="number" placeholder="0" />
-              </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Oppervlakte (m2)</label>
-                <Input type="number" placeholder="0" />
-              </div>
+              <div className="grid gap-2"><label className="text-sm font-medium">Slaapkamers</label><Input type="number" placeholder="0" /></div>
+              <div className="grid gap-2"><label className="text-sm font-medium">Badkamers</label><Input type="number" placeholder="0" /></div>
+              <div className="grid gap-2"><label className="text-sm font-medium">Oppervlakte (m2)</label><Input type="number" placeholder="0" /></div>
             </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Maandelijkse huurprijs (&#x20AC;)</label>
-              <Input type="number" placeholder="0" />
-            </div>
+            <div className="grid gap-2"><label className="text-sm font-medium">Maandelijkse huurprijs (&#x20AC;)</label><Input type="number" placeholder="0" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Annuleren</Button>
