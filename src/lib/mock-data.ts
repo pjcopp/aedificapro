@@ -681,3 +681,110 @@ export const paymentHistory: Record<string, { onTime: number; late: number; scor
   t4: { onTime: 16, late: 5, score: 76 },
   t5: { onTime: 36, late: 1, score: 97 },
 }
+
+export type InspectionItem = {
+  id: string
+  room: string
+  element: string
+  condition: "goed" | "licht gebrek" | "gebrek" | "ernstig gebrek"
+  description: string
+  photoCount: number
+  timestamp: string
+}
+
+export type PropertyInspection = {
+  id: string
+  propertyId: string
+  type: "intrede" | "uittrede" | "tussentijds"
+  date: string
+  inspector: string
+  status: "voltooid" | "in behandeling"
+  items: InspectionItem[]
+}
+
+export const propertyInspections: PropertyInspection[] = [
+  {
+    id: "insp1",
+    propertyId: "p1",
+    type: "intrede",
+    date: "2024-06-01T10:00:00Z",
+    inspector: "Sarah van Dijk",
+    status: "voltooid",
+    items: [
+      { id: "i1-1", room: "Woonkamer", element: "Muren", condition: "goed", description: "Muren in goede staat, recent geschilderd", photoCount: 2, timestamp: "2024-06-01T10:05:00Z" },
+      { id: "i1-2", room: "Woonkamer", element: "Vloer", condition: "goed", description: "Parketvloer zonder beschadigingen", photoCount: 1, timestamp: "2024-06-01T10:08:00Z" },
+      { id: "i1-3", room: "Woonkamer", element: "Ramen", condition: "licht gebrek", description: "Kleine kras op linker raam, ca. 5cm", photoCount: 3, timestamp: "2024-06-01T10:12:00Z" },
+      { id: "i1-4", room: "Woonkamer", element: "Verwarming", condition: "goed", description: "Radiator werkt correct", photoCount: 1, timestamp: "2024-06-01T10:15:00Z" },
+      { id: "i1-5", room: "Keuken", element: "Keukenblad", condition: "goed", description: "Granieten werkblad in perfecte staat", photoCount: 2, timestamp: "2024-06-01T10:20:00Z" },
+      { id: "i1-6", room: "Keuken", element: "Toestellen", condition: "goed", description: "Oven, kookplaat en vaatwasser functioneel", photoCount: 3, timestamp: "2024-06-01T10:25:00Z" },
+      { id: "i1-7", room: "Keuken", element: "Kraan", condition: "licht gebrek", description: "Lichte kalkaanslag op keukenkraan", photoCount: 2, timestamp: "2024-06-01T10:28:00Z" },
+      { id: "i1-8", room: "Badkamer", element: "Sanitair", condition: "goed", description: "Wastafel, douche en toilet in orde", photoCount: 3, timestamp: "2024-06-01T10:35:00Z" },
+      { id: "i1-9", room: "Badkamer", element: "Tegels", condition: "goed", description: "Tegels zonder barsten of loskomende voegen", photoCount: 1, timestamp: "2024-06-01T10:38:00Z" },
+      { id: "i1-10", room: "Slaapkamer 1", element: "Muren", condition: "goed", description: "Muren in goede staat", photoCount: 1, timestamp: "2024-06-01T10:45:00Z" },
+      { id: "i1-11", room: "Slaapkamer 1", element: "Vloer", condition: "goed", description: "Laminaat in goede staat", photoCount: 1, timestamp: "2024-06-01T10:48:00Z" },
+      { id: "i1-12", room: "Slaapkamer 2", element: "Muren", condition: "licht gebrek", description: "Kleine schroefgaatjes in muur (vorige bewoner)", photoCount: 2, timestamp: "2024-06-01T10:55:00Z" },
+      { id: "i1-13", room: "Hal", element: "Voordeur", condition: "goed", description: "Deur en slot functioneren correct", photoCount: 1, timestamp: "2024-06-01T11:00:00Z" },
+      { id: "i1-14", room: "Hal", element: "Parlofoon", condition: "goed", description: "Intercom werkt", photoCount: 1, timestamp: "2024-06-01T11:03:00Z" },
+    ],
+  },
+  {
+    id: "insp2",
+    propertyId: "p4",
+    type: "intrede",
+    date: "2024-03-01T09:00:00Z",
+    inspector: "Mark Hendricks",
+    status: "voltooid",
+    items: [
+      { id: "i2-1", room: "Woonkamer", element: "Muren", condition: "goed", description: "Pas geschilderd, uitstekende staat", photoCount: 2, timestamp: "2024-03-01T09:10:00Z" },
+      { id: "i2-2", room: "Woonkamer", element: "Vloer", condition: "licht gebrek", description: "Kleine kras in hardhouten vloer bij ingang", photoCount: 2, timestamp: "2024-03-01T09:15:00Z" },
+      { id: "i2-3", room: "Woonkamer", element: "Open haard", condition: "goed", description: "Schouw en haard in werkende staat", photoCount: 2, timestamp: "2024-03-01T09:20:00Z" },
+      { id: "i2-4", room: "Keuken", element: "Muren", condition: "goed", description: "Spatwand en muren proper", photoCount: 1, timestamp: "2024-03-01T09:30:00Z" },
+      { id: "i2-5", room: "Keuken", element: "Toestellen", condition: "gebrek", description: "Vriesvak koelkast sluit niet goed - rubbers versleten", photoCount: 3, timestamp: "2024-03-01T09:35:00Z" },
+      { id: "i2-6", room: "Badkamer 1", element: "Sanitair", condition: "goed", description: "Alles functioneel", photoCount: 2, timestamp: "2024-03-01T09:45:00Z" },
+      { id: "i2-7", room: "Badkamer 1", element: "Voegen", condition: "licht gebrek", description: "Siliconen rond bad beginnen los te komen", photoCount: 3, timestamp: "2024-03-01T09:50:00Z" },
+      { id: "i2-8", room: "Badkamer 2", element: "Sanitair", condition: "goed", description: "Douche en wastafel in orde", photoCount: 1, timestamp: "2024-03-01T09:55:00Z" },
+      { id: "i2-9", room: "Slaapkamer 1", element: "Raam", condition: "goed", description: "Dubbel glas, goede isolatie", photoCount: 1, timestamp: "2024-03-01T10:05:00Z" },
+      { id: "i2-10", room: "Slaapkamer 2", element: "Vloer", condition: "goed", description: "Tapijt in goede staat", photoCount: 1, timestamp: "2024-03-01T10:10:00Z" },
+      { id: "i2-11", room: "Slaapkamer 3", element: "Muren", condition: "licht gebrek", description: "Vochtplek in hoek bij raam - vermoedelijk condensatie", photoCount: 2, timestamp: "2024-03-01T10:15:00Z" },
+      { id: "i2-12", room: "Tuin", element: "Terras", condition: "gebrek", description: "Meerdere tegels verzakt, struikelgevaar", photoCount: 4, timestamp: "2024-03-01T10:30:00Z" },
+      { id: "i2-13", room: "Tuin", element: "Omheining", condition: "licht gebrek", description: "Tuinhek scharniert stroef", photoCount: 1, timestamp: "2024-03-01T10:35:00Z" },
+      { id: "i2-14", room: "Garage", element: "Poort", condition: "goed", description: "Elektrische garagepoort functioneert", photoCount: 1, timestamp: "2024-03-01T10:40:00Z" },
+      { id: "i2-15", room: "Garage", element: "Vloer", condition: "licht gebrek", description: "Olievlek op betonvloer", photoCount: 1, timestamp: "2024-03-01T10:42:00Z" },
+    ],
+  },
+  {
+    id: "insp3",
+    propertyId: "p5",
+    type: "tussentijds",
+    date: "2026-02-15T14:00:00Z",
+    inspector: "Lisa Vermeer",
+    status: "voltooid",
+    items: [
+      { id: "i3-1", room: "Woonkamer", element: "Muren", condition: "licht gebrek", description: "Verfschade naast TV-hoek, waarschijnlijk door meubels", photoCount: 2, timestamp: "2026-02-15T14:10:00Z" },
+      { id: "i3-2", room: "Woonkamer", element: "Vloer", condition: "goed", description: "Laminaat nog in goede staat", photoCount: 1, timestamp: "2026-02-15T14:15:00Z" },
+      { id: "i3-3", room: "Keuken", element: "Muren", condition: "gebrek", description: "Vetspetters op muur achter kookplaat - niet afwasbaar", photoCount: 2, timestamp: "2026-02-15T14:25:00Z" },
+      { id: "i3-4", room: "Keuken", element: "Afvoer", condition: "ernstig gebrek", description: "Gootsteen loopt traag leeg - vermoeden verstopping", photoCount: 1, timestamp: "2026-02-15T14:30:00Z" },
+      { id: "i3-5", room: "Badkamer", element: "Tegels", condition: "gebrek", description: "Gebarsten tegel naast douchedeur - scherpe rand", photoCount: 3, timestamp: "2026-02-15T14:40:00Z" },
+      { id: "i3-6", room: "Badkamer", element: "Ventilatie", condition: "ernstig gebrek", description: "Afzuiging werkt niet - schimmelvorming zichtbaar", photoCount: 4, timestamp: "2026-02-15T14:45:00Z" },
+      { id: "i3-7", room: "Slaapkamer", element: "Raam", condition: "licht gebrek", description: "Rolgordijn blijft hangen bij openen", photoCount: 1, timestamp: "2026-02-15T14:55:00Z" },
+      { id: "i3-8", room: "Slaapkamer", element: "Stopcontact", condition: "gebrek", description: "Stopcontact naast bed werkt niet", photoCount: 1, timestamp: "2026-02-15T15:00:00Z" },
+      { id: "i3-9", room: "Hal", element: "Verlichting", condition: "licht gebrek", description: "Plafondlamp flikkert", photoCount: 1, timestamp: "2026-02-15T15:05:00Z" },
+    ],
+  },
+  {
+    id: "insp4",
+    propertyId: "p1",
+    type: "tussentijds",
+    date: "2025-12-10T11:00:00Z",
+    inspector: "Sarah van Dijk",
+    status: "voltooid",
+    items: [
+      { id: "i4-1", room: "Woonkamer", element: "Muren", condition: "goed", description: "Geen verandering sinds intrede", photoCount: 1, timestamp: "2025-12-10T11:05:00Z" },
+      { id: "i4-2", room: "Keuken", element: "Toestellen", condition: "licht gebrek", description: "Deurgreep vaatwasser los", photoCount: 2, timestamp: "2025-12-10T11:15:00Z" },
+      { id: "i4-3", room: "Badkamer", element: "Voegen", condition: "licht gebrek", description: "Voegen douche beginnen te verkleuren", photoCount: 2, timestamp: "2025-12-10T11:25:00Z" },
+      { id: "i4-4", room: "Slaapkamer 1", element: "Raam", condition: "goed", description: "Ramen sluiten goed", photoCount: 1, timestamp: "2025-12-10T11:30:00Z" },
+      { id: "i4-5", room: "Slaapkamer 2", element: "Muren", condition: "licht gebrek", description: "Schroefgaatjes nog aanwezig", photoCount: 1, timestamp: "2025-12-10T11:35:00Z" },
+      { id: "i4-6", room: "Hal", element: "Vloer", condition: "goed", description: "Tegels in orde", photoCount: 1, timestamp: "2025-12-10T11:40:00Z" },
+    ],
+  },
+]

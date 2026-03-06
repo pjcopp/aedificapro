@@ -10,10 +10,11 @@ import {
   ChevronDown,
   LogOut,
   User,
+  Camera,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,10 +29,12 @@ type TopHeaderProps = {
   activeModule: string
   moduleLabel: string
   customerLogo?: string | null
+  userPhoto?: string | null
+  onUserPhotoChange?: (url: string | null) => void
   onModuleChange: (id: string) => void
 }
 
-export function TopHeader({ activeModule, moduleLabel, customerLogo, onModuleChange }: TopHeaderProps) {
+export function TopHeader({ activeModule, moduleLabel, customerLogo, userPhoto, onUserPhotoChange, onModuleChange }: TopHeaderProps) {
   const { theme, setTheme } = useTheme()
 
   return (
@@ -89,9 +92,12 @@ export function TopHeader({ activeModule, moduleLabel, customerLogo, onModuleCha
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 gap-2 px-2">
-                <Avatar className="size-7">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">SD</AvatarFallback>
-                </Avatar>
+                <div className="relative group">
+                  <Avatar className="size-7">
+                    {userPhoto ? <AvatarImage src={userPhoto} alt="Sarah van Dijk" /> : null}
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">SD</AvatarFallback>
+                  </Avatar>
+                </div>
                 <div className="hidden md:flex flex-col text-left text-xs leading-tight">
                   <span className="font-semibold">Sarah van Dijk</span>
                   <span className="text-muted-foreground">Beheerder</span>
@@ -100,6 +106,19 @@ export function TopHeader({ activeModule, moduleLabel, customerLogo, onModuleCha
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => {
+                const input = document.createElement("input")
+                input.type = "file"
+                input.accept = "image/*"
+                input.onchange = (ev) => {
+                  const file = (ev.target as HTMLInputElement).files?.[0]
+                  if (file) onUserPhotoChange?.(URL.createObjectURL(file))
+                }
+                input.click()
+              }}>
+                <Camera className="mr-2 size-4" />
+                Profielfoto Wijzigen
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onModuleChange("team")}>
                 <User className="mr-2 size-4" />
                 Mijn Profiel

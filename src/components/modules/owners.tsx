@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Building2,
   Mail,
@@ -18,11 +19,13 @@ import {
   Euro,
   Wrench,
   StickyNote,
+  Camera,
 } from "lucide-react"
 
-function OwnerDetail({ owner, onBack }: { owner: Owner; onBack: () => void }) {
+function OwnerDetail({ owner, onBack, photo, onPhotoChange }: { owner: Owner; onBack: () => void; photo: string | null; onPhotoChange: (url: string) => void }) {
   const ownerProperties = properties.filter((p) => owner.propertyIds.includes(p.id))
   const totalRent = ownerProperties.reduce((sum, p) => sum + p.monthlyRent, 0)
+  const initials = owner.name.split(" ").map((n) => n[0]).join("").slice(0, 2)
 
   return (
     <div className="space-y-6">
@@ -30,10 +33,34 @@ function OwnerDetail({ owner, onBack }: { owner: Owner; onBack: () => void }) {
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h2 className="text-2xl font-bold">{owner.name}</h2>
-        {owner.company && (
-          <Badge variant="outline">{owner.company}</Badge>
-        )}
+        <div className="relative group">
+          <Avatar className="size-12">
+            {photo ? <AvatarImage src={photo} alt={owner.name} /> : null}
+            <AvatarFallback className="bg-primary text-primary-foreground">{initials}</AvatarFallback>
+          </Avatar>
+          <button
+            className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation()
+              const input = document.createElement("input")
+              input.type = "file"
+              input.accept = "image/*"
+              input.onchange = (ev) => {
+                const file = (ev.target as HTMLInputElement).files?.[0]
+                if (file) onPhotoChange(URL.createObjectURL(file))
+              }
+              input.click()
+            }}
+          >
+            <Camera className="size-4 text-white" />
+          </button>
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold">{owner.name}</h2>
+          {owner.company && (
+            <Badge variant="outline">{owner.company}</Badge>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -147,9 +174,17 @@ function OwnerDetail({ owner, onBack }: { owner: Owner; onBack: () => void }) {
 export function OwnersModule() {
   const [selectedOwner, setSelectedOwner] = useState<Owner | null>(null)
   const [search, setSearch] = useState("")
+  const [ownerPhotos, setOwnerPhotos] = useState<Record<string, string>>({})
 
   if (selectedOwner) {
-    return <OwnerDetail owner={selectedOwner} onBack={() => setSelectedOwner(null)} />
+    return (
+      <OwnerDetail
+        owner={selectedOwner}
+        onBack={() => setSelectedOwner(null)}
+        photo={ownerPhotos[selectedOwner.id] || null}
+        onPhotoChange={(url) => setOwnerPhotos(prev => ({ ...prev, [selectedOwner.id]: url }))}
+      />
+    )
   }
 
   const filtered = owners.filter(
@@ -177,6 +212,7 @@ export function OwnersModule() {
         {filtered.map((owner) => {
           const ownerProps = properties.filter((p) => owner.propertyIds.includes(p.id))
           const totalRent = ownerProps.reduce((sum, p) => sum + p.monthlyRent, 0)
+          const initials = owner.name.split(" ").map((n) => n[0]).join("").slice(0, 2)
 
           return (
             <Card
@@ -186,14 +222,35 @@ export function OwnersModule() {
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-base">{owner.name}</CardTitle>
-                    {owner.company && (
-                      <p className="text-sm text-muted-foreground">{owner.company}</p>
-                    )}
-                  </div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                    <Briefcase className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-3">
+                    <div className="relative group">
+                      <Avatar className="size-10">
+                        {ownerPhotos[owner.id] ? <AvatarImage src={ownerPhotos[owner.id]} alt={owner.name} /> : null}
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm">{initials}</AvatarFallback>
+                      </Avatar>
+                      <button
+                        className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const input = document.createElement("input")
+                          input.type = "file"
+                          input.accept = "image/*"
+                          input.onchange = (ev) => {
+                            const file = (ev.target as HTMLInputElement).files?.[0]
+                            if (file) setOwnerPhotos(prev => ({ ...prev, [owner.id]: URL.createObjectURL(file) }))
+                          }
+                          input.click()
+                        }}
+                      >
+                        <Camera className="size-3 text-white" />
+                      </button>
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">{owner.name}</CardTitle>
+                      {owner.company && (
+                        <p className="text-sm text-muted-foreground">{owner.company}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardHeader>

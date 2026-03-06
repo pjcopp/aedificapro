@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { tickets as initialTickets, properties, workers } from "@/lib/mock-data"
 import type { Ticket } from "@/lib/mock-data"
 
@@ -46,6 +49,15 @@ export function TicketsModule() {
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+
+  // New ticket form state
+  const [newTitle, setNewTitle] = useState("")
+  const [newDescription, setNewDescription] = useState("")
+  const [newPropertyId, setNewPropertyId] = useState("")
+  const [newCategory, setNewCategory] = useState("")
+  const [newPriority, setNewPriority] = useState("")
+  const [newAssignedTo, setNewAssignedTo] = useState("")
 
   const filtered = ticketList.filter((t) =>
     t.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -89,6 +101,34 @@ export function TicketsModule() {
     setDragOverCol(null)
   }
 
+  const handleCreateTicket = () => {
+    const property = properties.find((p) => p.id === newPropertyId)
+    if (!newTitle || !newPropertyId || !newCategory || !newPriority) return
+
+    const newTicket: Ticket = {
+      id: `tk-new-${Date.now()}`,
+      propertyId: newPropertyId,
+      tenantId: property?.tenant?.id || "",
+      tenantName: property?.tenant?.name || "Beheerder",
+      title: newTitle,
+      description: newDescription,
+      category: newCategory as Ticket["category"],
+      priority: newPriority as Ticket["priority"],
+      status: "open",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      assignedTo: newAssignedTo || null,
+    }
+
+    setTicketList((prev) => [newTicket, ...prev])
+    setAddOpen(false)
+    setNewTitle("")
+    setNewDescription("")
+    setNewPropertyId("")
+    setNewCategory("")
+    setNewPriority("")
+    setNewAssignedTo("")
+  }
 
   if (selectedTicket) {
     const property = properties.find((p) => p.id === selectedTicket.propertyId)
@@ -127,12 +167,12 @@ export function TicketsModule() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><Camera className="size-5" /> Foto&apos;s &amp; Documenten</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Camera className="size-5" /> Foto&#39;s &amp; Documenten</CardTitle></CardHeader>
             <CardContent>
               <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground">
                 <Camera className="size-10 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">Sleep foto&apos;s of documenten hierheen</p>
-                <p className="text-xs mt-1">PV politie, foto&apos;s schade, offertes, ...</p>
+                <p className="text-sm">Sleep foto&#39;s of documenten hierheen</p>
+                <p className="text-xs mt-1">PV politie, foto&#39;s schade, offertes, ...</p>
                 <Button size="sm" variant="outline" className="mt-3">Bestanden Uploaden</Button>
               </div>
             </CardContent>
@@ -161,7 +201,7 @@ export function TicketsModule() {
       </div>
 
       <div className="flex gap-3">
-        <Button><Plus className="size-4 mr-2" /> Nieuw Ticket</Button>
+        <Button onClick={() => setAddOpen(true)}><Plus className="size-4 mr-2" /> Nieuw Ticket</Button>
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input placeholder="Zoek tickets..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
@@ -259,6 +299,79 @@ export function TicketsModule() {
           )
         })}
       </div>
+
+      {/* Nieuw Ticket Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nieuw Ticket Aanmaken</DialogTitle>
+            <DialogDescription>Maak handmatig een nieuw onderhoud- of herstellingsticket aan</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Titel</label>
+              <Input placeholder="Bijv. Lekkende kraan badkamer" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Beschrijving</label>
+              <Textarea placeholder="Gedetailleerde omschrijving van het probleem..." value={newDescription} onChange={(e) => setNewDescription(e.target.value)} rows={3} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Pand</label>
+                <Select value={newPropertyId} onValueChange={setNewPropertyId}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer pand" /></SelectTrigger>
+                  <SelectContent>
+                    {properties.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Categorie</label>
+                <Select value={newCategory} onValueChange={setNewCategory}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer categorie" /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(categoryLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Prioriteit</label>
+                <Select value={newPriority} onValueChange={setNewPriority}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer prioriteit" /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(priorityLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Toewijzen aan (optioneel)</label>
+                <Select value={newAssignedTo} onValueChange={setNewAssignedTo}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer vakman" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Niet toegewezen</SelectItem>
+                    {workers.map((w) => (
+                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>Annuleren</Button>
+            <Button onClick={handleCreateTicket} disabled={!newTitle || !newPropertyId || !newCategory || !newPriority}>Ticket Aanmaken</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

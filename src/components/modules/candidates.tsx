@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   UserPlus,
   Mail,
@@ -23,6 +24,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  Camera,
 } from "lucide-react"
 
 const statusConfig: Record<CandidateTenant["status"], { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle2 }> = {
@@ -31,10 +33,11 @@ const statusConfig: Record<CandidateTenant["status"], { label: string; variant: 
   rejected: { label: "Afgewezen", variant: "destructive", icon: XCircle },
 }
 
-function CandidateDetail({ candidate, onBack }: { candidate: CandidateTenant; onBack: () => void }) {
+function CandidateDetail({ candidate, onBack, photo, onPhotoChange }: { candidate: CandidateTenant; onBack: () => void; photo: string | null; onPhotoChange: (url: string) => void }) {
   const property = properties.find((p) => p.id === candidate.appliedForId)
   const status = statusConfig[candidate.status]
   const StatusIcon = status.icon
+  const initials = candidate.name.split(" ").map((n) => n[0]).join("").slice(0, 2)
 
   return (
     <div className="space-y-6">
@@ -42,7 +45,31 @@ function CandidateDetail({ candidate, onBack }: { candidate: CandidateTenant; on
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h2 className="text-2xl font-bold">{candidate.name}</h2>
+        <div className="relative group">
+          <Avatar className="size-12">
+            {photo ? <AvatarImage src={photo} alt={candidate.name} /> : null}
+            <AvatarFallback className="bg-primary text-primary-foreground">{initials}</AvatarFallback>
+          </Avatar>
+          <button
+            className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation()
+              const input = document.createElement("input")
+              input.type = "file"
+              input.accept = "image/*"
+              input.onchange = (ev) => {
+                const file = (ev.target as HTMLInputElement).files?.[0]
+                if (file) onPhotoChange(URL.createObjectURL(file))
+              }
+              input.click()
+            }}
+          >
+            <Camera className="size-4 text-white" />
+          </button>
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold">{candidate.name}</h2>
+        </div>
         <Badge variant={status.variant}>
           <StatusIcon className="mr-1 h-3 w-3" />
           {status.label}
@@ -131,9 +158,17 @@ export function CandidatesModule() {
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateTenant | null>(null)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [candidatePhotos, setCandidatePhotos] = useState<Record<string, string>>({})
 
   if (selectedCandidate) {
-    return <CandidateDetail candidate={selectedCandidate} onBack={() => setSelectedCandidate(null)} />
+    return (
+      <CandidateDetail
+        candidate={selectedCandidate}
+        onBack={() => setSelectedCandidate(null)}
+        photo={candidatePhotos[selectedCandidate.id] || null}
+        onPhotoChange={(url) => setCandidatePhotos(prev => ({ ...prev, [selectedCandidate.id]: url }))}
+      />
+    )
   }
 
   const filtered = candidateTenants
@@ -179,6 +214,7 @@ export function CandidatesModule() {
           const property = properties.find((p) => p.id === candidate.appliedForId)
           const status = statusConfig[candidate.status]
           const StatusIcon = status.icon
+          const initials = candidate.name.split(" ").map((n) => n[0]).join("").slice(0, 2)
 
           return (
             <Card
@@ -188,9 +224,33 @@ export function CandidatesModule() {
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-base">{candidate.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{candidate.familySituation}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="relative group">
+                      <Avatar className="size-10">
+                        {candidatePhotos[candidate.id] ? <AvatarImage src={candidatePhotos[candidate.id]} alt={candidate.name} /> : null}
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">{initials}</AvatarFallback>
+                      </Avatar>
+                      <button
+                        className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const input = document.createElement("input")
+                          input.type = "file"
+                          input.accept = "image/*"
+                          input.onchange = (ev) => {
+                            const file = (ev.target as HTMLInputElement).files?.[0]
+                            if (file) setCandidatePhotos(prev => ({ ...prev, [candidate.id]: URL.createObjectURL(file) }))
+                          }
+                          input.click()
+                        }}
+                      >
+                        <Camera className="size-3 text-white" />
+                      </button>
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">{candidate.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{candidate.familySituation}</p>
+                    </div>
                   </div>
                   <Badge variant={status.variant}>
                     <StatusIcon className="mr-1 h-3 w-3" />

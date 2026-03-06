@@ -44,6 +44,7 @@ const moduleLabels: Record<string, string> = {
 export default function Home() {
   const [activeModule, setActiveModule] = useState("dashboard")
   const [customerLogo, setCustomerLogo] = useState<string | null>(null)
+  const [userPhoto, setUserPhoto] = useState<string | null>(null)
 
   const renderModule = () => {
     switch (activeModule) {
@@ -81,6 +82,8 @@ export default function Home() {
           activeModule={activeModule}
           moduleLabel={moduleLabels[activeModule] || "Dashboard"}
           customerLogo={customerLogo}
+          userPhoto={userPhoto}
+          onUserPhotoChange={setUserPhoto}
           onModuleChange={setActiveModule}
         />
         <main className="relative z-10 flex-1 overflow-auto p-6">

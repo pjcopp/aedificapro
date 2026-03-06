@@ -1,10 +1,11 @@
 "use client"
 
-import { Phone, Mail, Star, CheckCircle2, XCircle } from "lucide-react"
+import { useState } from "react"
+import { Phone, Mail, Star, CheckCircle2, XCircle, Camera } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { workers } from "@/lib/mock-data"
 
 const specialtyColors: Record<string, string> = {
@@ -20,6 +21,8 @@ const specialtyLabels: Record<string, string> = {
 }
 
 export function WorkersModule() {
+  const [workerPhotos, setWorkerPhotos] = useState<Record<string, string>>({})
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -31,7 +34,28 @@ export function WorkersModule() {
           <Card key={worker.id} className="transition-all hover:shadow-md">
             <CardContent className="p-5">
               <div className="flex items-start gap-4">
-                <Avatar className="size-12"><AvatarFallback className="bg-primary/10 text-primary">{worker.name.split(" ").map((n) => n[0]).join("")}</AvatarFallback></Avatar>
+                <div className="relative group">
+                  <Avatar className="size-12">
+                    {workerPhotos[worker.id] ? <AvatarImage src={workerPhotos[worker.id]} alt={worker.name} /> : null}
+                    <AvatarFallback className="bg-primary/10 text-primary">{worker.name.split(" ").map((n) => n[0]).join("")}</AvatarFallback>
+                  </Avatar>
+                  <button
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      const input = document.createElement("input")
+                      input.type = "file"
+                      input.accept = "image/*"
+                      input.onchange = (ev) => {
+                        const file = (ev.target as HTMLInputElement).files?.[0]
+                        if (file) setWorkerPhotos(prev => ({ ...prev, [worker.id]: URL.createObjectURL(file) }))
+                      }
+                      input.click()
+                    }}
+                  >
+                    <Camera className="size-4 text-white" />
+                  </button>
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h4 className="font-semibold">{worker.name}</h4>
