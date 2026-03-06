@@ -35,7 +35,7 @@ export function TopHeader({ activeModule, moduleLabel, customerLogo, onModuleCha
   const { theme, setTheme } = useTheme()
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-sm shadow-md">
       <div className="flex h-14 items-center justify-between px-4">
         {/* Left - Sidebar trigger + Logo */}
         <div className="flex items-center gap-3">

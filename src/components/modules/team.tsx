@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { UserCog, Building2, Plus, Upload } from "lucide-react"
+import { UserCog, Building2, Plus, Upload, Camera } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { teamMembers } from "@/lib/mock-data"
 
@@ -15,6 +15,7 @@ const roleLabels: Record<string, string> = { admin: "Beheerder", manager: "Manag
 
 export function TeamModule({ onLogoChange }: { onLogoChange?: (url: string | null) => void }) {
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [memberPhotos, setMemberPhotos] = useState<Record<string, string>>({})
 
   return (
     <div className="space-y-6">
@@ -28,7 +29,7 @@ export function TeamModule({ onLogoChange }: { onLogoChange?: (url: string | nul
               <Card key={member.id}>
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4">
-                    <Avatar className="size-12"><AvatarFallback className="bg-primary text-primary-foreground">{member.avatar}</AvatarFallback></Avatar>
+                    <div className="relative group"><Avatar className="size-12">{memberPhotos[member.id] ? <AvatarImage src={memberPhotos[member.id]} alt={member.name} /> : null}<AvatarFallback className="bg-primary text-primary-foreground">{member.avatar}</AvatarFallback></Avatar><button className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={(e) => { e.stopPropagation(); const input = document.createElement("input"); input.type = "file"; input.accept = "image/*"; input.onchange = (ev) => { const file = (ev.target as HTMLInputElement).files?.[0]; if (file) setMemberPhotos(prev => ({ ...prev, [member.id]: URL.createObjectURL(file) })) }; input.click() }}><Camera className="size-4 text-white" /></button></div>
                     <div className="flex-1">
                       <h4 className="font-semibold">{member.name}</h4>
                       <Badge variant="outline" className={`mt-1 ${roleColors[member.role]}`}>{roleLabels[member.role]}</Badge>
