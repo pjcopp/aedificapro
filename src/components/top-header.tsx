@@ -84,11 +84,12 @@ type TopHeaderProps = {
 }
 
 const ticketCategories = [
-  { value: "plumbing", label: "Loodgieterij" },
-  { value: "electrical", label: "Elektriciteit" },
-  { value: "hvac", label: "HVAC" },
-  { value: "structural", label: "Structureel" },
-  { value: "appliance", label: "Toestellen" },
+  { value: "bug", label: "Bug / Fout" },
+  { value: "feature", label: "Functie Aanvraag" },
+  { value: "account", label: "Account / Login" },
+  { value: "performance", label: "Prestatie / Snelheid" },
+  { value: "data", label: "Data / Import / Export" },
+  { value: "integration", label: "Integratie / API" },
   { value: "other", label: "Overig" },
 ]
 
@@ -97,6 +98,19 @@ const ticketPriorities = [
   { value: "medium", label: "Gemiddeld" },
   { value: "high", label: "Hoog" },
   { value: "urgent", label: "Dringend" },
+]
+
+const ticketModules = [
+  { value: "dashboard", label: "Dashboard" },
+  { value: "properties", label: "Panden" },
+  { value: "tenants", label: "Huurders" },
+  { value: "contracts", label: "Contracten" },
+  { value: "tickets", label: "Tickets" },
+  { value: "invoicing", label: "Betalingen" },
+  { value: "analytics", label: "Analyse" },
+  { value: "messages", label: "Berichten" },
+  { value: "team", label: "Team & Instellingen" },
+  { value: "other", label: "Overig / Algemeen" },
 ]
 
 const moduleIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -176,21 +190,17 @@ export function TopHeader({ activeModule, moduleLabel, customerLogo, userPhoto, 
                 <Headphones className="size-4" />
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>Ondersteuningsticket Aanmaken</DialogTitle>
+                <DialogTitle>Software Supportticket</DialogTitle>
                 <DialogDescription>
-                  Beschrijf uw probleem en we helpen u zo snel mogelijk.
+                  Heeft u een probleem met AedificaPro? Beschrijf het hieronder en ons team helpt u verder.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <label className="text-sm font-medium">Titel</label>
-                  <Input placeholder="Korte beschrijving van het probleem" />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Beschrijving</label>
-                  <Textarea placeholder="Geef een gedetailleerde beschrijving..." />
+                  <label className="text-sm font-medium">Onderwerp</label>
+                  <Input placeholder="Bijv. Foutmelding bij opslaan contract" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
@@ -209,20 +219,55 @@ export function TopHeader({ activeModule, moduleLabel, customerLogo, userPhoto, 
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <label className="text-sm font-medium">Prioriteit</label>
+                    <label className="text-sm font-medium">Module</label>
                     <Select>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecteer prioriteit" />
+                        <SelectValue placeholder="Waar treedt het op?" />
                       </SelectTrigger>
                       <SelectContent>
-                        {ticketPriorities.map((pri) => (
-                          <SelectItem key={pri.value} value={pri.value}>
-                            {pri.label}
+                        {ticketModules.map((mod) => (
+                          <SelectItem key={mod.value} value={mod.value}>
+                            {mod.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Beschrijving</label>
+                  <Textarea placeholder="Beschrijf stap voor stap wat er mis gaat..." className="min-h-[100px]" />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Prioriteit</label>
+                  <Select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecteer prioriteit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ticketPriorities.map((pri) => (
+                        <SelectItem key={pri.value} value={pri.value}>
+                          {pri.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Screenshot toevoegen</label>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      const input = document.createElement("input")
+                      input.type = "file"
+                      input.accept = "image/*"
+                      input.click()
+                    }}
+                  >
+                    <ImageIcon className="mr-2 size-4" />
+                    Schermafbeelding Kiezen
+                  </Button>
                 </div>
               </div>
               <DialogFooter>

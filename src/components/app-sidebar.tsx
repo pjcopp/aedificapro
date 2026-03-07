@@ -52,7 +52,7 @@ const mainNav: NavItem[] = [
   { id: "owners", label: "Verhuurders", icon: Briefcase },
   { id: "tenants", label: "Huurders", icon: Users },
   { id: "candidates", label: "Kandidaten", icon: UserPlus },
-  { id: "map", label: "Pandenkaart", icon: MapPin },
+  { id: "map", label: "Kaart", icon: MapPin },
 ]
 
 const managementNav: NavItem[] = [

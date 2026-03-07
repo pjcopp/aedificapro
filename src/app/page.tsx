@@ -29,7 +29,7 @@ const moduleLabels: Record<string, string> = {
   owners: "Verhuurders",
   tenants: "Huurders",
   candidates: "Kandidaten",
-  map: "Pandenkaart",
+  map: "Kaart",
   "contract-dashboard": "Contract Dashboard",
   contracts: "Templates",
   tickets: "Tickets",
