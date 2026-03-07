@@ -125,3 +125,29 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Leaflet fix: Tailwind CSS 4 reset breaks tile rendering */
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+.leaflet-container {
+  font-family: inherit;
+  z-index: 0;
+}
+.leaflet-tile-pane {
+  z-index: 1;
+}
+.leaflet-control-zoom a {
+  font-size: 16px !important;
+  line-height: 30px !important;
+  width: 30px !important;
+  height: 30px !important;
+}
+/* Leaflet popup fix for dark mode */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px !important;
+}
+.leaflet-popup-content {
+  margin: 10px 14px !important;
+}

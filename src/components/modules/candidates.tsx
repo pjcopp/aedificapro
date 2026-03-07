@@ -37,7 +37,7 @@ function CandidateDetail({ candidate, onBack, photo, onPhotoChange }: { candidat
   const property = properties.find((p) => p.id === candidate.appliedForId)
   const status = statusConfig[candidate.status]
   const StatusIcon = status.icon
-  const initials = candidate.name.split(" ").map((n) => n[0]).join("").slice(0, 2)
+  const displayPhoto = photo || candidate.photoUrl
 
   return (
     <div className="space-y-6">
@@ -47,8 +47,8 @@ function CandidateDetail({ candidate, onBack, photo, onPhotoChange }: { candidat
         </Button>
         <div className="relative group">
           <Avatar className="size-12">
-            {photo ? <AvatarImage src={photo} alt={candidate.name} /> : null}
-            <AvatarFallback className="bg-primary text-primary-foreground">{initials}</AvatarFallback>
+            <AvatarImage src={displayPhoto} alt={candidate.name} />
+            <AvatarFallback className="bg-primary text-primary-foreground">{candidate.avatar}</AvatarFallback>
           </Avatar>
           <button
             className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -165,7 +165,7 @@ export function CandidatesModule() {
       <CandidateDetail
         candidate={selectedCandidate}
         onBack={() => setSelectedCandidate(null)}
-        photo={candidatePhotos[selectedCandidate.id] || null}
+        photo={candidatePhotos[selectedCandidate.id] || selectedCandidate.photoUrl}
         onPhotoChange={(url) => setCandidatePhotos(prev => ({ ...prev, [selectedCandidate.id]: url }))}
       />
     )
@@ -214,7 +214,7 @@ export function CandidatesModule() {
           const property = properties.find((p) => p.id === candidate.appliedForId)
           const status = statusConfig[candidate.status]
           const StatusIcon = status.icon
-          const initials = candidate.name.split(" ").map((n) => n[0]).join("").slice(0, 2)
+          const displayPhoto = candidatePhotos[candidate.id] || candidate.photoUrl
 
           return (
             <Card
@@ -227,8 +227,8 @@ export function CandidatesModule() {
                   <div className="flex items-center gap-3">
                     <div className="relative group">
                       <Avatar className="size-10">
-                        {candidatePhotos[candidate.id] ? <AvatarImage src={candidatePhotos[candidate.id]} alt={candidate.name} /> : null}
-                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">{initials}</AvatarFallback>
+                        <AvatarImage src={displayPhoto} alt={candidate.name} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">{candidate.avatar}</AvatarFallback>
                       </Avatar>
                       <button
                         className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"

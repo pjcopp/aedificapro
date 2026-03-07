@@ -25,7 +25,7 @@ import {
 function OwnerDetail({ owner, onBack, photo, onPhotoChange }: { owner: Owner; onBack: () => void; photo: string | null; onPhotoChange: (url: string) => void }) {
   const ownerProperties = properties.filter((p) => owner.propertyIds.includes(p.id))
   const totalRent = ownerProperties.reduce((sum, p) => sum + p.monthlyRent, 0)
-  const initials = owner.name.split(" ").map((n) => n[0]).join("").slice(0, 2)
+  const displayPhoto = photo || owner.photoUrl
 
   return (
     <div className="space-y-6">
@@ -35,8 +35,8 @@ function OwnerDetail({ owner, onBack, photo, onPhotoChange }: { owner: Owner; on
         </Button>
         <div className="relative group">
           <Avatar className="size-12">
-            {photo ? <AvatarImage src={photo} alt={owner.name} /> : null}
-            <AvatarFallback className="bg-primary text-primary-foreground">{initials}</AvatarFallback>
+            <AvatarImage src={displayPhoto} alt={owner.name} />
+            <AvatarFallback className="bg-primary text-primary-foreground">{owner.avatar}</AvatarFallback>
           </Avatar>
           <button
             className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -82,7 +82,7 @@ function OwnerDetail({ owner, onBack, photo, onPhotoChange }: { owner: Owner; on
               <Euro className="h-4 w-4 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Beheersvergoeding</p>
-                <p className="text-lg font-semibold">&#x20AC;{owner.monthlyFee}/maand</p>
+                <p className="text-lg font-semibold">{owner.managementFeePercent}%</p>
               </div>
             </div>
           </CardContent>
@@ -181,7 +181,7 @@ export function OwnersModule() {
       <OwnerDetail
         owner={selectedOwner}
         onBack={() => setSelectedOwner(null)}
-        photo={ownerPhotos[selectedOwner.id] || null}
+        photo={ownerPhotos[selectedOwner.id] || selectedOwner.photoUrl}
         onPhotoChange={(url) => setOwnerPhotos(prev => ({ ...prev, [selectedOwner.id]: url }))}
       />
     )
@@ -212,7 +212,7 @@ export function OwnersModule() {
         {filtered.map((owner) => {
           const ownerProps = properties.filter((p) => owner.propertyIds.includes(p.id))
           const totalRent = ownerProps.reduce((sum, p) => sum + p.monthlyRent, 0)
-          const initials = owner.name.split(" ").map((n) => n[0]).join("").slice(0, 2)
+          const displayPhoto = ownerPhotos[owner.id] || owner.photoUrl
 
           return (
             <Card
@@ -225,8 +225,8 @@ export function OwnersModule() {
                   <div className="flex items-center gap-3">
                     <div className="relative group">
                       <Avatar className="size-10">
-                        {ownerPhotos[owner.id] ? <AvatarImage src={ownerPhotos[owner.id]} alt={owner.name} /> : null}
-                        <AvatarFallback className="bg-primary/10 text-primary text-sm">{initials}</AvatarFallback>
+                        <AvatarImage src={displayPhoto} alt={owner.name} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm">{owner.avatar}</AvatarFallback>
                       </Avatar>
                       <button
                         className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -265,7 +265,7 @@ export function OwnersModule() {
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Euro className="h-3.5 w-3.5" />
-                    <span>Vergoeding: &#x20AC;{owner.monthlyFee}/m</span>
+                    <span>Vergoeding: {owner.managementFeePercent}%</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Wrench className="h-3.5 w-3.5" />

@@ -12,8 +12,11 @@ import { analyticsData, properties } from "@/lib/mock-data"
 import {
   Bot, TrendingUp, TrendingDown, Minus, Euro, Percent, Building2, Star,
   Calculator, MapPin, Database, BarChart3, Search, Home, ArrowUpRight, ArrowDownRight,
-  Info, Target, Zap, Bed, Ruler, Navigation,
+  Info, Target, Zap, Bed, Ruler, Navigation, GraduationCap, ShoppingCart,
+  Stethoscope, Train, Trees, Utensils, Loader2, Globe, Users, Shield,
+  Droplets, Volume2, Wind, FileDown,
 } from "lucide-react"
+// html2canvas + jspdf loaded via dynamic import in exportReportPdf()
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend, AreaChart, Area, RadarChart, Radar, PolarGrid,
@@ -146,6 +149,258 @@ const trendHistory = [
   { quarter: "Q4 2025", brussel: 3350, antwerpen: 3050, gent: 2900, leuven: 3250 },
   { quarter: "Q1 2026", brussel: 3400, antwerpen: 3100, gent: 2950, leuven: 3300 },
 ]
+
+// ── Property Report: Types ──────────────────────────────────────────────────
+type POI = {
+  id: number
+  category: string
+  name: string
+  lat: number
+  lng: number
+  distance: number
+}
+
+type ReportResult = {
+  address: string
+  lat: number
+  lng: number
+  displayName: string
+  pois: POI[]
+  nearestByCategory: Record<string, POI | undefined>
+  matchedMarket: MarketEntry | null
+  demographics: { population: number; growthRate: number; density: number; under18: number; over65: number; avgIncome: number; unemployment: number }
+  scores: { category: string; score: number }[]
+  risks: { flood: string; noise: string; air: string; greenPct: number }
+  historicalPrices: { year: string; apartment: number; house: number }[]
+}
+
+// ── Property Report: Belgian Demographics (Statbel-gebaseerd, 2025) ─────────
+const demographicsDB: Record<string, ReportResult["demographics"]> = {
+  "Brussel": { population: 1222637, growthRate: 0.8, density: 7501, under18: 22.1, over65: 14.5, avgIncome: 20150, unemployment: 15.2 },
+  "Antwerpen": { population: 536079, growthRate: 0.6, density: 2623, under18: 20.3, over65: 17.8, avgIncome: 21800, unemployment: 11.5 },
+  "Gent": { population: 268059, growthRate: 0.5, density: 1713, under18: 18.7, over65: 18.2, avgIncome: 22900, unemployment: 8.9 },
+  "Leuven": { population: 103070, growthRate: 1.2, density: 2312, under18: 17.5, over65: 16.8, avgIncome: 24200, unemployment: 5.8 },
+  "Brugge": { population: 118890, growthRate: 0.2, density: 905, under18: 17.2, over65: 21.5, avgIncome: 23400, unemployment: 4.8 },
+  "Luik": { population: 199208, growthRate: 0.3, density: 2883, under18: 21.8, over65: 18.6, avgIncome: 18500, unemployment: 18.7 },
+  "Mechelen": { population: 87609, growthRate: 0.9, density: 1347, under18: 21.2, over65: 17.1, avgIncome: 22100, unemployment: 9.2 },
+  "Hasselt": { population: 78590, growthRate: 0.4, density: 1058, under18: 19.5, over65: 19.8, avgIncome: 22800, unemployment: 7.5 },
+  "Namen": { population: 112520, growthRate: 0.3, density: 680, under18: 19.8, over65: 20.2, avgIncome: 20400, unemployment: 13.8 },
+  "Kortrijk": { population: 78614, growthRate: 0.1, density: 1048, under18: 18.0, over65: 20.8, avgIncome: 22200, unemployment: 6.2 },
+  "Aalst": { population: 87945, growthRate: 0.3, density: 1111, under18: 18.8, over65: 19.5, avgIncome: 21500, unemployment: 7.8 },
+  "Sint-Niklaas": { population: 79342, growthRate: 0.2, density: 913, under18: 19.2, over65: 19.8, avgIncome: 21200, unemployment: 8.5 },
+  "Oostende": { population: 72456, growthRate: -0.1, density: 2064, under18: 16.5, over65: 24.2, avgIncome: 20800, unemployment: 10.5 },
+  "Turnhout": { population: 45789, growthRate: 0.3, density: 1292, under18: 19.8, over65: 19.2, avgIncome: 21600, unemployment: 8.2 },
+  "Genk": { population: 67012, growthRate: 0.1, density: 824, under18: 20.5, over65: 18.5, avgIncome: 20200, unemployment: 12.5 },
+}
+
+// ── Property Report: Risk Data per City ─────────────────────────────────────
+const riskDB: Record<string, ReportResult["risks"]> = {
+  "Brussel": { flood: "Gemiddeld", noise: "Hoog", air: "Matig", greenPct: 42 },
+  "Antwerpen": { flood: "Gemiddeld", noise: "Gemiddeld", air: "Matig", greenPct: 48 },
+  "Gent": { flood: "Laag", noise: "Gemiddeld", air: "Goed", greenPct: 55 },
+  "Leuven": { flood: "Laag", noise: "Laag", air: "Goed", greenPct: 58 },
+  "Brugge": { flood: "Gemiddeld", noise: "Laag", air: "Goed", greenPct: 62 },
+  "Luik": { flood: "Hoog", noise: "Hoog", air: "Matig", greenPct: 38 },
+  "Mechelen": { flood: "Gemiddeld", noise: "Gemiddeld", air: "Goed", greenPct: 52 },
+  "Hasselt": { flood: "Laag", noise: "Laag", air: "Goed", greenPct: 60 },
+  "Namen": { flood: "Gemiddeld", noise: "Laag", air: "Goed", greenPct: 65 },
+  "Kortrijk": { flood: "Laag", noise: "Laag", air: "Goed", greenPct: 55 },
+  "Aalst": { flood: "Gemiddeld", noise: "Gemiddeld", air: "Matig", greenPct: 50 },
+  "Sint-Niklaas": { flood: "Laag", noise: "Laag", air: "Goed", greenPct: 54 },
+  "Oostende": { flood: "Hoog", noise: "Gemiddeld", air: "Goed", greenPct: 35 },
+  "Turnhout": { flood: "Laag", noise: "Laag", air: "Goed", greenPct: 58 },
+  "Genk": { flood: "Laag", noise: "Laag", air: "Matig", greenPct: 62 },
+}
+
+// ── Property Report: API Functions ──────────────────────────────────────────
+const haversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371000
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number; displayName: string } | null> => {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address + ", Belgium")}&format=json&countrycodes=be&limit=1&accept-language=nl`)
+    const data = await res.json()
+    if (!data || data.length === 0) return null
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), displayName: data[0].display_name }
+  } catch { return null }
+}
+
+const poiCategoryLabels: Record<string, string> = {
+  school: "School", kindergarten: "Crèche", supermarket: "Supermarkt", pharmacy: "Apotheek",
+  hospital: "Ziekenhuis", doctors: "Huisarts", bus_stop: "Bushalte", station: "Treinstation",
+  tram_stop: "Tramhalte", park: "Park", restaurant: "Restaurant", sports_centre: "Sportcentrum",
+}
+
+const poiCategoryColors: Record<string, string> = {
+  school: "#3b82f6", kindergarten: "#ec4899", supermarket: "#22c55e", pharmacy: "#ef4444",
+  hospital: "#dc2626", doctors: "#f97316", bus_stop: "#f59e0b", station: "#6366f1",
+  tram_stop: "#8b5cf6", park: "#10b981", restaurant: "#a855f7", sports_centre: "#06b6d4",
+}
+
+const fetchNearbyPOIs = async (lat: number, lng: number): Promise<POI[]> => {
+  const query = `[out:json][timeout:30];(
+    node["amenity"="school"](around:2000,${lat},${lng});
+    node["amenity"="kindergarten"](around:2000,${lat},${lng});
+    node["shop"="supermarket"](around:2000,${lat},${lng});
+    node["amenity"="pharmacy"](around:2000,${lat},${lng});
+    node["amenity"="hospital"](around:3000,${lat},${lng});
+    node["amenity"="doctors"](around:2000,${lat},${lng});
+    node["highway"="bus_stop"](around:1000,${lat},${lng});
+    node["railway"="station"](around:5000,${lat},${lng});
+    node["railway"="tram_stop"](around:1000,${lat},${lng});
+    node["leisure"="park"](around:2000,${lat},${lng});
+    node["amenity"="restaurant"](around:1000,${lat},${lng});
+    node["leisure"="sports_centre"](around:2000,${lat},${lng});
+    way["amenity"="school"](around:2000,${lat},${lng});
+    way["shop"="supermarket"](around:2000,${lat},${lng});
+    way["leisure"="park"](around:2000,${lat},${lng});
+  );out center body;`
+
+  try {
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: `data=${encodeURIComponent(query)}`,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    })
+    const data = await res.json()
+    const seen = new Set<string>()
+
+    return (data.elements || [])
+      .map((el: { type: string; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }) => {
+        const elLat = el.type === "way" ? el.center?.lat : el.lat
+        const elLng = el.type === "way" ? el.center?.lon : el.lon
+        if (!elLat || !elLng) return null
+
+        const tags = el.tags || {}
+        let category = ""
+        if (tags.amenity === "school") category = "school"
+        else if (tags.amenity === "kindergarten") category = "kindergarten"
+        else if (tags.shop === "supermarket") category = "supermarket"
+        else if (tags.amenity === "pharmacy") category = "pharmacy"
+        else if (tags.amenity === "hospital") category = "hospital"
+        else if (tags.amenity === "doctors") category = "doctors"
+        else if (tags.highway === "bus_stop") category = "bus_stop"
+        else if (tags.railway === "station") category = "station"
+        else if (tags.railway === "tram_stop") category = "tram_stop"
+        else if (tags.leisure === "park") category = "park"
+        else if (tags.amenity === "restaurant") category = "restaurant"
+        else if (tags.leisure === "sports_centre") category = "sports_centre"
+        if (!category) return null
+
+        const name = tags.name || poiCategoryLabels[category] || category
+        const key = `${category}-${name}`
+        if (seen.has(key)) return null
+        seen.add(key)
+
+        return { id: el.id, category, name, lat: elLat, lng: elLng, distance: Math.round(haversineDistance(lat, lng, elLat, elLng)) }
+      })
+      .filter(Boolean) as POI[]
+  } catch { return [] }
+}
+
+const reportCategories = [
+  { key: "onderwijs", types: ["school", "kindergarten"], label: "Onderwijs" },
+  { key: "winkels", types: ["supermarket"], label: "Supermarkt" },
+  { key: "gezondheid", types: ["pharmacy", "hospital", "doctors"], label: "Gezondheid" },
+  { key: "transport", types: ["bus_stop", "station", "tram_stop"], label: "Openbaar Vervoer" },
+  { key: "groen", types: ["park"], label: "Park & Groen" },
+  { key: "horeca", types: ["restaurant"], label: "Horeca" },
+]
+
+function calcNeighborhoodScores(pois: POI[]) {
+  return reportCategories.map((cat) => {
+    const catPois = pois.filter((p) => cat.types.includes(p.category))
+    if (catPois.length === 0) return { category: cat.label, score: 10 }
+    const nearest = Math.min(...catPois.map((p) => p.distance))
+    const proximityScore = Math.max(0, 100 - nearest / 20)
+    const countBonus = Math.min(20, catPois.length * 4)
+    return { category: cat.label, score: Math.min(100, Math.round(proximityScore + countBonus)) }
+  })
+}
+
+function generateHistoricalPrices(market: MarketEntry) {
+  const aptNow = market.apartment.saleAvg
+  const houseNow = market.house.saleAvg
+  const rates = [0.02, 0.055, 0.04, 0.025, 0.03, 0.028, 0.032]
+  const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]
+  const prices: number[][] = [[aptNow, houseNow]]
+  let aptPrice = aptNow
+  let housePrice = houseNow
+  for (let i = rates.length - 1; i >= 0; i--) {
+    aptPrice = aptPrice / (1 + rates[i])
+    housePrice = housePrice / (1 + rates[i] * 0.85)
+    prices.unshift([Math.round(aptPrice), Math.round(housePrice)])
+  }
+  return years.map((year, i) => ({ year, apartment: prices[i][0], house: prices[i][1] }))
+}
+
+// ── Property Report: Map Component ──────────────────────────────────────────
+function ReportMap({ centerLat, centerLng, pois, address }: {
+  centerLat: number; centerLng: number; pois: POI[]; address: string
+}) {
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<unknown>(null)
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return
+    let cancelled = false
+
+    async function initMap() {
+      const L = (await import("leaflet")).default
+      if (cancelled || !mapRef.current) return
+
+      const map = L.map(mapRef.current).setView([centerLat, centerLng], 15)
+      mapInstanceRef.current = map
+
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      }).addTo(map)
+
+      // Center marker
+      const centerIcon = L.divIcon({
+        className: "",
+        html: `<div style="background:#6366f1;color:white;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;box-shadow:0 2px 8px rgba(99,102,241,0.5);border:3px solid white;">&#8962;</div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+      })
+      L.marker([centerLat, centerLng], { icon: centerIcon }).addTo(map)
+        .bindPopup(`<div style="font-family:system-ui;font-weight:600;">${address}</div>`)
+
+      // 2km radius
+      L.circle([centerLat, centerLng], { radius: 2000, color: "#6366f1", fillColor: "#6366f1", fillOpacity: 0.04, weight: 1.5, dashArray: "6 4" }).addTo(map)
+
+      // POI markers
+      pois.forEach((poi) => {
+        const color = poiCategoryColors[poi.category] || "#888"
+        const label = poiCategoryLabels[poi.category] || poi.category
+        const icon = L.divIcon({
+          className: "",
+          html: `<div style="background:${color};color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.2);border:2px solid white;font-family:system-ui;">${label.charAt(0)}</div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        })
+        L.marker([poi.lat, poi.lng], { icon }).addTo(map)
+          .bindPopup(`<div style="font-family:system-ui;"><strong>${poi.name}</strong><br/><span style="color:#6b7280;font-size:12px;">${label} &mdash; ${poi.distance}m</span></div>`)
+      })
+    }
+
+    initMap()
+    return () => {
+      cancelled = true
+      if (mapInstanceRef.current) {
+        (mapInstanceRef.current as { remove: () => void }).remove()
+        mapInstanceRef.current = null
+      }
+    }
+  }, [centerLat, centerLng, pois, address])
+
+  return <div ref={mapRef} className="w-full h-[500px] rounded-lg z-0" />
+}
 
 // ── Nearby Comparables Map ──────────────────────────────────────────────────
 function NearbyPricesMap({ centerLat, centerLng, nearbyProps, analyzedPrice }: {
@@ -339,6 +594,14 @@ export function AnalyticsModule() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
+  // Report state
+  const [reportAddress, setReportAddress] = useState("")
+  const [reportResult, setReportResult] = useState<ReportResult | null>(null)
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false)
+  const [reportError, setReportError] = useState("")
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
+  const reportRef = useRef<HTMLDivElement>(null)
+
   const findClosestMarket = (city: string, zip: string): MarketEntry | null => {
     const cityLower = city.toLowerCase().trim()
     // Try exact city match first
@@ -501,6 +764,163 @@ export function AnalyticsModule() {
     }, 800)
   }
 
+  const generateReport = async () => {
+    if (!reportAddress.trim()) return
+    setIsGeneratingReport(true)
+    setReportError("")
+    setReportResult(null)
+
+    try {
+      const geo = await geocodeAddress(reportAddress)
+      if (!geo) {
+        setReportError("Adres niet gevonden. Controleer het adres en probeer opnieuw.")
+        setIsGeneratingReport(false)
+        return
+      }
+
+      const pois = await fetchNearbyPOIs(geo.lat, geo.lng)
+      pois.sort((a, b) => a.distance - b.distance)
+
+      const closestMarket = belgianMarketDB.reduce<{ market: MarketEntry | null; dist: number }>(
+        (best, m) => {
+          const d = haversineDistance(geo.lat, geo.lng, m.lat, m.lng)
+          return d < best.dist ? { market: m, dist: d } : best
+        },
+        { market: null, dist: Infinity }
+      ).market
+
+      const cityName = closestMarket?.city || "Brussel"
+      const demographics = demographicsDB[cityName] || demographicsDB["Brussel"]
+      const risks = riskDB[cityName] || riskDB["Brussel"]
+      const scores = calcNeighborhoodScores(pois)
+      const historicalPrices = closestMarket ? generateHistoricalPrices(closestMarket) : []
+
+      const nearestByCategory: Record<string, POI | undefined> = {}
+      reportCategories.forEach((cat) => {
+        const catPois = pois.filter((p) => cat.types.includes(p.category))
+        nearestByCategory[cat.key] = catPois.length > 0 ? catPois.reduce((min, p) => p.distance < min.distance ? p : min) : undefined
+      })
+
+      setReportResult({
+        address: reportAddress,
+        lat: geo.lat,
+        lng: geo.lng,
+        displayName: geo.displayName,
+        pois,
+        matchedMarket: closestMarket,
+        demographics,
+        scores,
+        risks,
+        historicalPrices,
+        nearestByCategory,
+      })
+    } catch {
+      setReportError("Er is een fout opgetreden bij het genereren van het rapport. Probeer het later opnieuw.")
+    }
+    setIsGeneratingReport(false)
+  }
+
+  const exportReportPdf = async () => {
+    if (!reportRef.current || !reportResult) return
+    setIsExportingPdf(true)
+
+    try {
+      // Dynamic imports (SSR-safe, correct module resolution)
+      const html2canvasModule = await import("html2canvas")
+      const html2canvas = html2canvasModule.default || html2canvasModule
+      const jspdfModule = await import("jspdf")
+      const jsPDF = jspdfModule.jsPDF || (jspdfModule as Record<string, unknown>).default
+
+      // Wait for maps/charts to fully render
+      await new Promise((r) => setTimeout(r, 800))
+
+      const element = reportRef.current
+      const canvas = await (html2canvas as (el: HTMLElement, opts: Record<string, unknown>) => Promise<HTMLCanvasElement>)(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        onclone: (clonedDoc: Document) => {
+          // Force light background for all cards
+          const cards = clonedDoc.querySelectorAll("[class*='card']")
+          cards.forEach((card) => {
+            (card as HTMLElement).style.backgroundColor = "#ffffff";
+            (card as HTMLElement).style.color = "#111827"
+          })
+          // Fix Leaflet tiles in cloned document
+          const tiles = clonedDoc.querySelectorAll(".leaflet-tile-pane img")
+          tiles.forEach((img) => {
+            (img as HTMLElement).style.maxWidth = "none";
+            (img as HTMLElement).style.maxHeight = "none"
+          })
+        },
+      })
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
+
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const margin = 8
+      const imgWidth = pageWidth - margin * 2
+
+      // Header on first page
+      pdf.setFontSize(18)
+      pdf.setTextColor(99, 102, 241)
+      pdf.text("AedificaPro", margin, 12)
+      pdf.setFontSize(10)
+      pdf.setTextColor(107, 114, 128)
+      pdf.text("Rapport", margin, 18)
+      pdf.setFontSize(8)
+      pdf.text(`${reportResult.address} | Gegenereerd op ${new Date().toLocaleDateString("nl-BE")}`, margin, 23)
+      pdf.setDrawColor(229, 231, 235)
+      pdf.line(margin, 25, pageWidth - margin, 25)
+
+      const startY = 28
+
+      // Split image across pages
+      const availableFirstPage = pageHeight - startY - margin
+      let sourceY = 0
+      let isFirstPage = true
+
+      while (sourceY < canvas.height) {
+        const sliceHeight = isFirstPage ? availableFirstPage : pageHeight - margin * 2
+        const sliceHeightPx = (sliceHeight / imgWidth) * canvas.width
+
+        if (!isFirstPage) {
+          pdf.addPage()
+        }
+
+        const sliceCanvas = document.createElement("canvas")
+        sliceCanvas.width = canvas.width
+        const actualSliceH = Math.min(sliceHeightPx, canvas.height - sourceY)
+        sliceCanvas.height = actualSliceH
+        const ctx = sliceCanvas.getContext("2d")
+        if (ctx) {
+          ctx.drawImage(canvas, 0, sourceY, canvas.width, actualSliceH, 0, 0, canvas.width, actualSliceH)
+          const sliceData = sliceCanvas.toDataURL("image/png")
+          const renderedH = (actualSliceH * imgWidth) / canvas.width
+          pdf.addImage(sliceData, "PNG", margin, isFirstPage ? startY : margin, imgWidth, renderedH)
+        }
+
+        sourceY += actualSliceH
+        isFirstPage = false
+      }
+
+      // Footer on last page
+      pdf.setFontSize(7)
+      pdf.setTextColor(156, 163, 175)
+      pdf.text("AedificaPro Rapport | Data: OpenStreetMap Nominatim & Overpass API | Prijzen: Belgische marktdata (indicatief)", margin, pageHeight - 5)
+
+      pdf.save(`Rapport_${reportResult.address.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`)
+    } catch (err) {
+      console.error("PDF export failed:", err)
+    }
+    setIsExportingPdf(false)
+  }
+
   const marketOverview = belgianMarketDB.slice(0, 10).map((m) => ({
     city: m.city,
     appartement: m.apartment.rentAvg,
@@ -542,29 +962,10 @@ export function AnalyticsModule() {
         <p className="text-muted-foreground">Huur- en verkoopprijzen bepalen op basis van Belgische marktdata</p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Gem. Bezetting</CardTitle></CardHeader>
-          <CardContent><div className="flex items-center gap-2"><Percent className="size-5 text-green-500" /><span className="text-2xl font-bold">{avgOccupancy.toFixed(0)}%</span></div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Portefeuillewaarde</CardTitle></CardHeader>
-          <CardContent><div className="flex items-center gap-2"><Euro className="size-5 text-blue-500" /><span className="text-2xl font-bold">&euro;{(totalMonthlyRevenue * 12).toLocaleString()}/jr</span></div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Gem. Huur/m&sup2;</CardTitle></CardHeader>
-          <CardContent><div className="flex items-center gap-2"><Building2 className="size-5 text-purple-500" /><span className="text-2xl font-bold">&euro;{avgPricePerSqm.toFixed(2)}</span></div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Totaal Oppervlakte</CardTitle></CardHeader>
-          <CardContent><div className="flex items-center gap-2"><Ruler className="size-5 text-cyan-500" /><span className="text-2xl font-bold">{totalSqm} m&sup2;</span></div></CardContent>
-        </Card>
-      </div>
-
       <Tabs defaultValue="analyze" className="space-y-4">
         <TabsList>
           <TabsTrigger value="analyze"><Target className="size-4 mr-2" /> Pand Analyseren</TabsTrigger>
+          <TabsTrigger value="report"><Globe className="size-4 mr-2" /> Rapport</TabsTrigger>
           <TabsTrigger value="market"><Database className="size-4 mr-2" /> Marktdatabank</TabsTrigger>
           <TabsTrigger value="portfolio"><BarChart3 className="size-4 mr-2" /> Portefeuille</TabsTrigger>
         </TabsList>
@@ -814,6 +1215,381 @@ export function AnalyticsModule() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ── Tab: Pandenrapport ──────────────────────────────────── */}
+        <TabsContent value="report" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Globe className="size-5 text-primary" />
+                <CardTitle>Pandenrapport</CardTitle>
+              </div>
+              <CardDescription>
+                Voer een adres in om een uitgebreid rapport te genereren met nabijgelegen voorzieningen, marktprijzen, demografie en risicofactoren.
+                Gegevens via OpenStreetMap Nominatim &amp; Overpass API.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Voer een volledig adres in, bijv. Grote Markt 1, 2000 Antwerpen"
+                    value={reportAddress}
+                    onChange={(e) => setReportAddress(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && generateReport()}
+                    className="pl-9"
+                  />
+                </div>
+                <Button onClick={generateReport} disabled={!reportAddress.trim() || isGeneratingReport}>
+                  {isGeneratingReport ? <><Loader2 className="size-4 mr-2 animate-spin" /> Genereren...</> : <><Search className="size-4 mr-2" /> Rapport Genereren</>}
+                </Button>
+                {reportResult && (
+                  <Button variant="outline" onClick={exportReportPdf} disabled={isExportingPdf}>
+                    {isExportingPdf ? <><Loader2 className="size-4 mr-2 animate-spin" /> PDF maken...</> : <><FileDown className="size-4 mr-2" /> Download PDF</>}
+                  </Button>
+                )}
+              </div>
+              {reportError && <p className="text-sm text-red-500">{reportError}</p>}
+            </CardContent>
+          </Card>
+
+          {reportResult && (
+            <div ref={reportRef} className="space-y-4">
+              {/* Location header */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                      <MapPin className="size-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-lg">{reportResult.address}</p>
+                      <p className="text-sm text-muted-foreground">{reportResult.displayName}</p>
+                      <div className="flex gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
+                        <span>Lat: {reportResult.lat.toFixed(4)}</span>
+                        <span>Lng: {reportResult.lng.toFixed(4)}</span>
+                        {reportResult.matchedMarket && <Badge variant="secondary">{reportResult.matchedMarket.city} &mdash; {reportResult.matchedMarket.region}</Badge>}
+                        <Badge variant="outline">{reportResult.pois.length} voorzieningen gevonden</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Nearest POI summary cards */}
+              <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
+                {reportCategories.map((cat) => {
+                  const nearest = reportResult.nearestByCategory[cat.key]
+                  const count = reportResult.pois.filter((p) => cat.types.includes(p.category)).length
+                  const IconComp = cat.key === "onderwijs" ? GraduationCap : cat.key === "winkels" ? ShoppingCart : cat.key === "gezondheid" ? Stethoscope : cat.key === "transport" ? Train : cat.key === "groen" ? Trees : Utensils
+                  const colorCls = cat.key === "onderwijs" ? "text-blue-500" : cat.key === "winkels" ? "text-green-500" : cat.key === "gezondheid" ? "text-red-500" : cat.key === "transport" ? "text-orange-500" : cat.key === "groen" ? "text-emerald-500" : "text-purple-500"
+
+                  return (
+                    <Card key={cat.key}>
+                      <CardContent className="p-3 text-center">
+                        <IconComp className={`size-6 mx-auto mb-1 ${colorCls}`} />
+                        <p className="text-xs font-medium text-muted-foreground">{cat.label}</p>
+                        {nearest ? (
+                          <>
+                            <p className="text-lg font-bold">{nearest.distance < 1000 ? `${nearest.distance}m` : `${(nearest.distance / 1000).toFixed(1)}km`}</p>
+                            <p className="text-[10px] text-muted-foreground truncate" title={nearest.name}>{nearest.name}</p>
+                            <Badge variant="outline" className="mt-1 text-[10px]">{count} gevonden</Badge>
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground mt-1">Niet gevonden</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+
+              {/* Neighborhood Score Radar + Map */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Buurt Score</CardTitle>
+                    <CardDescription>Beoordeling op basis van nabijheid en aantal voorzieningen</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[350px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart data={reportResult.scores}>
+                          <PolarGrid className="stroke-border" />
+                          <PolarAngleAxis dataKey="category" tick={{ fill: "currentColor", fontSize: 11 }} />
+                          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: "currentColor", fontSize: 10 }} />
+                          <Radar name="Score" dataKey="score" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} strokeWidth={2} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-2 text-center">
+                      <p className="text-2xl font-bold text-primary">
+                        {Math.round(reportResult.scores.reduce((s, c) => s + c.score, 0) / reportResult.scores.length)}/100
+                      </p>
+                      <p className="text-xs text-muted-foreground">Gemiddelde buurt score</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="size-5 text-primary" />
+                      <CardTitle className="text-base">Voorzieningen Kaart</CardTitle>
+                    </div>
+                    <CardDescription>Alle gevonden voorzieningen in een straal van 2 km</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ReportMap centerLat={reportResult.lat} centerLng={reportResult.lng} pois={reportResult.pois} address={reportResult.address} />
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* All POIs table by category */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Alle Voorzieningen ({reportResult.pois.length})</CardTitle>
+                  <CardDescription>Gedetailleerd overzicht van alle gevonden voorzieningen per categorie</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {reportCategories.map((cat) => {
+                      const catPois = reportResult.pois.filter((p) => cat.types.includes(p.category)).sort((a, b) => a.distance - b.distance)
+                      if (catPois.length === 0) return null
+                      return (
+                        <div key={cat.key}>
+                          <h4 className="text-sm font-semibold mb-2">{cat.label} ({catPois.length})</h4>
+                          <div className="grid gap-1.5">
+                            {catPois.slice(0, 8).map((poi) => (
+                              <div key={poi.id} className="flex items-center justify-between text-sm bg-muted/30 rounded px-3 py-1.5">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: poiCategoryColors[poi.category] }} />
+                                  <span className="truncate">{poi.name}</span>
+                                  <span className="text-xs text-muted-foreground shrink-0">({poiCategoryLabels[poi.category]})</span>
+                                </div>
+                                <Badge variant="outline" className="text-xs shrink-0 ml-2">{poi.distance < 1000 ? `${poi.distance}m` : `${(poi.distance / 1000).toFixed(1)}km`}</Badge>
+                              </div>
+                            ))}
+                            {catPois.length > 8 && <p className="text-xs text-muted-foreground pl-5">en {catPois.length - 8} meer...</p>}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Market Data & Historical Prices */}
+              {reportResult.matchedMarket && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center gap-2">
+                        <Euro className="size-5 text-primary" />
+                        <CardTitle className="text-base">Vastgoedprijzen &mdash; {reportResult.matchedMarket.city}</CardTitle>
+                      </div>
+                      <CardDescription>Actuele huur- en verkoopprijzen per type pand</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {(["apartment", "house", "studio", "commercial"] as const).map((type) => {
+                          const data = reportResult.matchedMarket![type]
+                          return (
+                            <div key={type} className="border-b pb-2 last:border-0">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm font-medium">{typeLabels[type]}</span>
+                                <div className="flex items-center gap-1 text-xs text-green-600">
+                                  <ArrowUpRight className="size-3" />
+                                  <span>+{data.rentTrend}% huur / +{data.saleTrend}% verkoop</span>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">Huur: </span>
+                                  <span className="font-medium">&euro;{data.rentMin} &ndash; &euro;{data.rentMax}</span>
+                                  <span className="text-xs text-muted-foreground"> (gem. &euro;{data.rentAvg})</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Verkoop/m&sup2;: </span>
+                                  <span className="font-medium">&euro;{data.saleMin.toLocaleString()} &ndash; &euro;{data.saleMax.toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="size-5 text-primary" />
+                        <CardTitle className="text-base">Historische Prijsevolutie</CardTitle>
+                      </div>
+                      <CardDescription>Verkoopprijs per m&sup2; (2019&ndash;2026)</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={reportResult.historicalPrices}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                            <XAxis dataKey="year" tick={{ fill: "currentColor", fontSize: 11 }} />
+                            <YAxis tick={{ fill: "currentColor", fontSize: 11 }} />
+                            <Tooltip formatter={(value: number) => [`\u20AC${value.toLocaleString()}/m\u00B2`, ""]} />
+                            <Legend />
+                            <Area type="monotone" dataKey="apartment" stroke="#6366f1" fill="#6366f1" fillOpacity={0.15} name="Appartement" strokeWidth={2} />
+                            <Area type="monotone" dataKey="house" stroke="#10b981" fill="#10b981" fillOpacity={0.15} name="Woning" strokeWidth={2} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Demographics */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <Users className="size-5 text-primary" />
+                    <CardTitle className="text-base">Demografie &mdash; {reportResult.matchedMarket?.city || "Regio"}</CardTitle>
+                  </div>
+                  <CardDescription>Bevolkingsgegevens en socio-economische indicatoren (bron: Statbel)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <p className="text-2xl font-bold">{reportResult.demographics.population.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Inwoners</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <p className={`text-2xl font-bold ${reportResult.demographics.growthRate >= 0 ? "text-green-600" : "text-red-500"}`}>
+                        {reportResult.demographics.growthRate >= 0 ? "+" : ""}{reportResult.demographics.growthRate}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">Jaarlijkse groei</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <p className="text-2xl font-bold">{reportResult.demographics.density.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Inwoners/km&sup2;</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <p className="text-2xl font-bold">&euro;{reportResult.demographics.avgIncome.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Gem. inkomen/jaar</p>
+                    </div>
+                  </div>
+                  <Separator className="my-4" />
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1"><span>Jongeren (&lt;18 jaar)</span><span className="font-medium">{reportResult.demographics.under18}%</span></div>
+                      <div className="h-2.5 bg-muted rounded-full overflow-hidden"><div className="h-full rounded-full bg-blue-500" style={{ width: `${reportResult.demographics.under18 * 3}%` }} /></div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1"><span>Senioren (&gt;65 jaar)</span><span className="font-medium">{reportResult.demographics.over65}%</span></div>
+                      <div className="h-2.5 bg-muted rounded-full overflow-hidden"><div className="h-full rounded-full bg-amber-500" style={{ width: `${reportResult.demographics.over65 * 3}%` }} /></div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1"><span>Werkloosheid</span><span className="font-medium">{reportResult.demographics.unemployment}%</span></div>
+                      <div className="h-2.5 bg-muted rounded-full overflow-hidden"><div className="h-full rounded-full bg-red-400" style={{ width: `${reportResult.demographics.unemployment * 3}%` }} /></div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Risk Assessment */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className="size-5 text-primary" />
+                    <CardTitle className="text-base">Risicobeoordeling &amp; Omgevingsfactoren</CardTitle>
+                  </div>
+                  <CardDescription>Indicatieve beoordeling op basis van regionale data</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Droplets className={`size-6 shrink-0 ${reportResult.risks.flood === "Laag" ? "text-green-500" : reportResult.risks.flood === "Gemiddeld" ? "text-yellow-500" : "text-red-500"}`} />
+                      <div>
+                        <p className="text-sm font-medium">Overstromingsrisico</p>
+                        <Badge variant={reportResult.risks.flood === "Laag" ? "outline" : reportResult.risks.flood === "Gemiddeld" ? "secondary" : "destructive"} className="mt-0.5">{reportResult.risks.flood}</Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Volume2 className={`size-6 shrink-0 ${reportResult.risks.noise === "Laag" ? "text-green-500" : reportResult.risks.noise === "Gemiddeld" ? "text-yellow-500" : "text-red-500"}`} />
+                      <div>
+                        <p className="text-sm font-medium">Geluidshinder</p>
+                        <Badge variant={reportResult.risks.noise === "Laag" ? "outline" : reportResult.risks.noise === "Gemiddeld" ? "secondary" : "destructive"} className="mt-0.5">{reportResult.risks.noise}</Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Wind className={`size-6 shrink-0 ${reportResult.risks.air === "Goed" ? "text-green-500" : reportResult.risks.air === "Matig" ? "text-yellow-500" : "text-red-500"}`} />
+                      <div>
+                        <p className="text-sm font-medium">Luchtkwaliteit</p>
+                        <Badge variant={reportResult.risks.air === "Goed" ? "outline" : reportResult.risks.air === "Matig" ? "secondary" : "destructive"} className="mt-0.5">{reportResult.risks.air}</Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Trees className={`size-6 shrink-0 ${reportResult.risks.greenPct >= 50 ? "text-green-500" : reportResult.risks.greenPct >= 35 ? "text-yellow-500" : "text-red-500"}`} />
+                      <div>
+                        <p className="text-sm font-medium">Groene ruimte</p>
+                        <p className="text-lg font-bold">{reportResult.risks.greenPct}%</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Market summary bar */}
+              {reportResult.matchedMarket && (
+                <Card className="border-primary/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Bot className="size-5 text-primary" />
+                      <p className="font-semibold">Samenvatting</p>
+                    </div>
+                    <div className="grid gap-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <Info className="size-4 text-primary mt-0.5 shrink-0" />
+                        <p>
+                          Dit pand bevindt zich in <strong>{reportResult.matchedMarket.city}</strong> ({reportResult.matchedMarket.region})
+                          met een vraagindex van <strong>{reportResult.matchedMarket.demandIndex}/100</strong> en
+                          een leegstandspercentage van <strong>{reportResult.matchedMarket.vacancyRate}%</strong>.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Info className="size-4 text-primary mt-0.5 shrink-0" />
+                        <p>
+                          De gemiddelde huurprijs in deze regio bedraagt <strong>&euro;{reportResult.matchedMarket.avgRentPerSqm}/m&sup2;</strong> en
+                          de gemiddelde verkoopprijs <strong>&euro;{reportResult.matchedMarket.avgSalePerSqm.toLocaleString()}/m&sup2;</strong>.
+                        </p>
+                      </div>
+                      {reportResult.demographics.growthRate > 0.5 && (
+                        <div className="flex items-start gap-2">
+                          <Info className="size-4 text-green-500 mt-0.5 shrink-0" />
+                          <p>De bevolking groeit met <strong>+{reportResult.demographics.growthRate}%/jaar</strong>, wat een positieve indicator is voor vastgoedinvesteringen.</p>
+                        </div>
+                      )}
+                      {reportResult.risks.flood === "Hoog" && (
+                        <div className="flex items-start gap-2">
+                          <Info className="size-4 text-red-500 mt-0.5 shrink-0" />
+                          <p className="text-red-600">Let op: deze regio heeft een <strong>hoog overstromingsrisico</strong>. Controleer de verzekeringspremies.</p>
+                        </div>
+                      )}
+                      <div className="flex items-start gap-2">
+                        <Info className="size-4 text-primary mt-0.5 shrink-0" />
+                        <p>
+                          Gemiddelde buurt score: <strong>{Math.round(reportResult.scores.reduce((s, c) => s + c.score, 0) / reportResult.scores.length)}/100</strong>.
+                          {reportResult.pois.length > 0 ? ` Er werden ${reportResult.pois.length} voorzieningen gevonden in een straal van 2 km.` : " Geen voorzieningen gevonden nabij dit adres."}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         {/* ── Tab 2: Marktdatabank ──────────────────────────────────── */}

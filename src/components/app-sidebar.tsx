@@ -1,10 +1,12 @@
 "use client"
 
+import { useCallback } from "react"
 import {
   Building2,
   LayoutDashboard,
   Users,
   FileText,
+  FileBarChart,
   Ticket,
   Receipt,
   MessageSquare,
@@ -16,7 +18,6 @@ import {
   UserCog,
   Bot,
   Building,
-  Settings,
   Briefcase,
   UserPlus,
 } from "lucide-react"
@@ -35,6 +36,7 @@ import {
   SidebarFooter,
   SidebarRail,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 type NavItem = {
@@ -54,9 +56,9 @@ const mainNav: NavItem[] = [
 ]
 
 const managementNav: NavItem[] = [
-  { id: "contracts", label: "Contracten", icon: FileText },
+  { id: "contract-dashboard", label: "Contract Dashboard", icon: FileBarChart },
   { id: "tickets", label: "Tickets", icon: Ticket, badge: 4 },
-  { id: "invoicing", label: "Facturatie", icon: Receipt },
+  { id: "invoicing", label: "Betalingen", icon: Receipt },
   { id: "interventions", label: "Interventies", icon: Wrench },
   { id: "workers", label: "Vaklui", icon: HardHat },
 ]
@@ -73,16 +75,31 @@ const insightsNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { id: "team", label: "Team & Instellingen", icon: UserCog },
+  { id: "contracts", label: "Templates", icon: FileText },
 ]
 
 type AppSidebarProps = {
   activeModule: string
   onModuleChange: (moduleId: string) => void
   customerLogo?: string | null
-  onLogoChange?: (logo: string | null) => void
+  hoverExpand?: boolean
 }
 
-export function AppSidebar({ activeModule, onModuleChange, customerLogo, onLogoChange }: AppSidebarProps) {
+export function AppSidebar({ activeModule, onModuleChange, customerLogo, hoverExpand = false }: AppSidebarProps) {
+  const { toggleSidebar, state } = useSidebar()
+
+  const handleMouseEnter = useCallback(() => {
+    if (hoverExpand && state === "collapsed") {
+      toggleSidebar()
+    }
+  }, [hoverExpand, state, toggleSidebar])
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverExpand && state === "expanded") {
+      toggleSidebar()
+    }
+  }, [hoverExpand, state, toggleSidebar])
+
   const renderGroup = (label: string, items: NavItem[]) => (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
@@ -109,7 +126,11 @@ export function AppSidebar({ activeModule, onModuleChange, customerLogo, onLogoC
   )
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar
+      collapsible="icon"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -144,21 +165,10 @@ export function AppSidebar({ activeModule, onModuleChange, customerLogo, onLogoC
         {renderGroup("Administratie", adminNav)}
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="Instellingen"
-              onClick={() => {
-                const url = prompt("Voer de URL van uw logo in:", customerLogo || "")
-                if (url !== null) onLogoChange?.(url || null)
-              }}
-            >
-              <Settings />
-              <span>Logo Wijzigen</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter className="py-3">
+        <div className="px-3 text-center">
+          <p className="text-[10px] text-muted-foreground/60 group-data-[collapsible=icon]:hidden">&copy; 2026 AedificaPro</p>
+        </div>
       </SidebarFooter>
 
       <SidebarRail />

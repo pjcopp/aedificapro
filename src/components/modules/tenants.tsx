@@ -177,7 +177,7 @@ export function TenantsModule() {
   const tenantsWithProperty: TenantWithExtra[] = tenants.map((t) => ({
     ...t,
     propertyName: properties.find((p) => p.id === t.propertyId)?.name,
-    photoUrl: tenantPhotos[t.id] || null,
+    photoUrl: tenantPhotos[t.id] || t.photoUrl,
     documents: [],
   }))
 
@@ -191,7 +191,7 @@ export function TenantsModule() {
   if (selectedTenant) {
     return (
       <TenantDetail
-        tenant={{ ...selectedTenant, photoUrl: tenantPhotos[selectedTenant.id] || null }}
+        tenant={{ ...selectedTenant, photoUrl: tenantPhotos[selectedTenant.id] || selectedTenant.photoUrl }}
         onBack={() => setSelectedTenant(null)}
         onPhotoChange={(url) => setTenantPhotos(prev => ({ ...prev, [selectedTenant.id]: url }))}
       />
@@ -235,9 +235,7 @@ export function TenantsModule() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="size-9">
-                        {tenantPhotos[tenant.id] ? (
-                          <AvatarImage src={tenantPhotos[tenant.id]} alt={tenant.name} />
-                        ) : null}
+                        <AvatarImage src={tenantPhotos[tenant.id] || tenant.photoUrl} alt={tenant.name} />
                         <AvatarFallback className="bg-primary/10 text-primary text-xs">{tenant.avatar}</AvatarFallback>
                       </Avatar>
                       <div>

@@ -7,8 +7,23 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { emails, properties } from "@/lib/mock-data"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { emails, properties, tenants, workers, teamMembers } from "@/lib/mock-data"
 import type { EmailMessage } from "@/lib/mock-data"
+
+function getSenderPhoto(email: string): string | undefined {
+  const tenant = tenants.find(t => t.email === email)
+  if (tenant) return tenant.photoUrl
+  const worker = workers.find(w => w.email === email)
+  if (worker) return worker.photoUrl
+  const member = teamMembers.find(m => m.email === email)
+  if (member) return member.photoUrl
+  return undefined
+}
+
+function getSenderInitials(name: string): string {
+  return name.split("@")[0].split(".").map(n => n[0]?.toUpperCase() || "").join("").slice(0, 2)
+}
 
 export function EmailModule() {
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null)
@@ -31,10 +46,18 @@ export function EmailModule() {
               const property = email.propertyId ? properties.find((p) => p.id === email.propertyId) : null
               return (
                 <button key={email.id} className={`w-full text-left p-4 border-b transition-colors hover:bg-muted/50 ${selectedEmail?.id === email.id ? "bg-muted" : ""} ${!email.read ? "bg-primary/5" : ""}`} onClick={() => { setSelectedEmail(email); setShowCompose(false) }}>
-                  <div className="flex items-start justify-between mb-1"><p className={`text-sm truncate ${!email.read ? "font-semibold" : ""}`}>{email.from}</p>{!email.read && <div className="size-2 rounded-full bg-primary shrink-0 mt-1.5" />}</div>
-                  <p className="text-sm font-medium truncate">{email.subject}</p>
-                  <p className="text-xs text-muted-foreground truncate mt-1">{email.body}</p>
-                  <div className="flex items-center gap-2 mt-2">{property && <Badge variant="secondary" className="text-xs">{property.name}</Badge>}<span className="text-xs text-muted-foreground ml-auto">{new Date(email.timestamp).toLocaleDateString("nl-BE")}</span></div>
+                  <div className="flex items-start gap-3">
+                    <Avatar className="size-8 shrink-0 mt-0.5">
+                      {getSenderPhoto(email.from) && <AvatarImage src={getSenderPhoto(email.from)} alt={email.from} />}
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">{getSenderInitials(email.from)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-1"><p className={`text-sm truncate ${!email.read ? "font-semibold" : ""}`}>{email.from}</p>{!email.read && <div className="size-2 rounded-full bg-primary shrink-0 mt-1.5" />}</div>
+                      <p className="text-sm font-medium truncate">{email.subject}</p>
+                      <p className="text-xs text-muted-foreground truncate mt-1">{email.body}</p>
+                      <div className="flex items-center gap-2 mt-2">{property && <Badge variant="secondary" className="text-xs">{property.name}</Badge>}<span className="text-xs text-muted-foreground ml-auto">{new Date(email.timestamp).toLocaleDateString("nl-BE")}</span></div>
+                    </div>
+                  </div>
                 </button>
               )
             })}
@@ -55,8 +78,16 @@ export function EmailModule() {
             <>
               <CardHeader className="border-b pb-3">
                 <CardTitle className="text-base">{selectedEmail.subject}</CardTitle>
-                <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground"><span>Van: {selectedEmail.from}</span><span>&bull;</span><span>Aan: {selectedEmail.to}</span></div>
-                <span className="text-xs text-muted-foreground">{new Date(selectedEmail.timestamp).toLocaleString("nl-BE")}</span>
+                <div className="flex items-center gap-3 mt-2">
+                  <Avatar className="size-8 shrink-0">
+                    {getSenderPhoto(selectedEmail.from) && <AvatarImage src={getSenderPhoto(selectedEmail.from)} alt={selectedEmail.from} />}
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">{getSenderInitials(selectedEmail.from)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="text-sm text-muted-foreground"><span>Van: {selectedEmail.from}</span> <span>&bull;</span> <span>Aan: {selectedEmail.to}</span></div>
+                    <span className="text-xs text-muted-foreground">{new Date(selectedEmail.timestamp).toLocaleString("nl-BE")}</span>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="flex-1 p-4"><p className="text-sm leading-relaxed whitespace-pre-wrap">{selectedEmail.body}</p></CardContent>
               <div className="border-t p-4 flex gap-2"><Button variant="outline" size="sm"><Reply className="size-4 mr-1" /> Beantwoorden</Button></div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, AlertCircle, Clock, CheckCircle2, XCircle, GripVertical, Plus, Camera, ArrowLeft, MapPin } from "lucide-react"
+import { Search, AlertCircle, Clock, CheckCircle2, XCircle, GripVertical, Plus, Camera, ArrowLeft, MapPin, User } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,8 @@ import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { tickets as initialTickets, properties, workers } from "@/lib/mock-data"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { tickets as initialTickets, properties, workers, tenants } from "@/lib/mock-data"
 import type { Ticket } from "@/lib/mock-data"
 
 const priorityColors: Record<string, string> = {
@@ -141,9 +142,15 @@ export function TicketsModule() {
         </Button>
 
         <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">{selectedTicket.title}</h2>
-            <p className="text-muted-foreground">{property?.name} &middot; {selectedTicket.tenantName}</p>
+          <div className="flex items-center gap-3">
+            <Avatar className="size-10">
+              {(() => { const t = tenants.find(t => t.id === selectedTicket.tenantId); return t ? <AvatarImage src={t.photoUrl} alt={selectedTicket.tenantName} /> : null })()}
+              <AvatarFallback className="bg-primary/10 text-primary">{selectedTicket.tenantName.split(" ").map(n => n[0]).join("").slice(0,2)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h2 className="text-2xl font-bold">{selectedTicket.title}</h2>
+              <p className="text-muted-foreground">{property?.name} &middot; {selectedTicket.tenantName}</p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Badge variant="outline" className={priorityColors[selectedTicket.priority]}>{priorityLabels[selectedTicket.priority]}</Badge>
@@ -272,14 +279,23 @@ export function TicketsModule() {
 
                             {worker && (
                               <div className="mt-1.5 text-xs text-muted-foreground flex items-center gap-1">
-                                <div className="size-4 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-bold text-primary">
-                                  {worker.name.split(" ").map(n => n[0]).join("")}
-                                </div>
+                                <Avatar className="size-4">
+                                  <AvatarImage src={worker.photoUrl} alt={worker.name} />
+                                  <AvatarFallback className="text-[6px] bg-primary/10 text-primary">{worker.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
+                                </Avatar>
                                 {worker.name}
                               </div>
                             )}
 
-                            <p className="text-xs text-muted-foreground mt-1">{ticket.tenantName}</p>
+                            {(() => { const tenant = tenants.find(t => t.id === ticket.tenantId); return (
+                              <div className="mt-1.5 text-xs text-muted-foreground flex items-center gap-1">
+                                <Avatar className="size-4">
+                                  {tenant && <AvatarImage src={tenant.photoUrl} alt={ticket.tenantName} />}
+                                  <AvatarFallback className="text-[6px] bg-muted">{ticket.tenantName.split(" ").map(n => n[0]).join("").slice(0,2)}</AvatarFallback>
+                                </Avatar>
+                                {ticket.tenantName}
+                              </div>
+                            )})()}
                           </div>
                         </div>
                       </CardContent>

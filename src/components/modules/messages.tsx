@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { messages, properties } from "@/lib/mock-data"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { messages, properties, teamMembers } from "@/lib/mock-data"
 
 export function MessagesModule() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null)
@@ -38,7 +38,10 @@ export function MessagesModule() {
           <CardContent className="flex-1 overflow-auto p-0">
             {propertyConversations.map((conv) => (
               <button key={conv.property.id} className={`w-full flex items-start gap-3 p-4 text-left border-b transition-colors hover:bg-muted/50 ${selectedPropertyId === conv.property.id ? "bg-muted" : ""}`} onClick={() => setSelectedPropertyId(conv.property.id)}>
-                <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 shrink-0"><Building2 className="size-5 text-primary" /></div>
+                <Avatar className="size-10 shrink-0">
+                  {conv.property.tenant && <AvatarImage src={conv.property.tenant.photoUrl} alt={conv.property.tenant.name} />}
+                  <AvatarFallback className="bg-primary/10 text-primary">{conv.property.tenant?.avatar || "?"}</AvatarFallback>
+                </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between"><p className="font-medium text-sm truncate">{conv.property.name}</p>{conv.unreadCount > 0 && <Badge className="ml-2 shrink-0">{conv.unreadCount}</Badge>}</div>
                   <p className="text-xs text-muted-foreground truncate">{conv.property.tenant?.name}</p>
@@ -59,7 +62,11 @@ export function MessagesModule() {
                 <div className="space-y-4">
                   {selectedConversation.messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()).map((msg) => (
                     <div key={msg.id} className={`flex gap-3 ${msg.senderRole === "owner" ? "flex-row-reverse" : ""}`}>
-                      <Avatar className="size-8 shrink-0"><AvatarFallback className="text-xs bg-primary/10">{msg.sender.split(" ").map((n) => n[0]).join("").slice(0, 2)}</AvatarFallback></Avatar>
+                      <Avatar className="size-8 shrink-0">
+                        {msg.senderRole === "tenant" && selectedConversation.property.tenant && <AvatarImage src={selectedConversation.property.tenant.photoUrl} alt={msg.sender} />}
+                        {msg.senderRole === "owner" && <AvatarImage src={teamMembers[0]?.photoUrl} alt={msg.sender} />}
+                        <AvatarFallback className="text-xs bg-primary/10">{msg.sender.split(" ").map((n) => n[0]).join("").slice(0, 2)}</AvatarFallback>
+                      </Avatar>
                       <div className={`max-w-[70%] rounded-lg p-3 ${msg.senderRole === "owner" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                         <p className="text-sm">{msg.content}</p>
                         <p className={`text-xs mt-1 ${msg.senderRole === "owner" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{new Date(msg.timestamp).toLocaleString("nl-BE")}</p>

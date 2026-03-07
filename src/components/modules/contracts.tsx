@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { FileText, Plus, Upload, Eye, Trash2, Search, Download, Send, X, File } from "lucide-react"
+import { useState, useCallback } from "react"
+import { FileText, Plus, Upload, Eye, Trash2, Search, Download, Send, File, Printer, ZoomIn, ZoomOut, RotateCcw } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { properties, owners } from "@/lib/mock-data"
+import { generateContractPdf, generateTemplatePdf } from "@/lib/generate-contract-pdf"
 
 type ContractTemplate = {
   id: string
@@ -52,9 +54,94 @@ const initialTemplates: ContractTemplate[] = [
   { id: "ct8", name: "Addendum Huurprijswijziging", category: "addendum", uploadedAt: "2026-01-15", fileSize: "88 KB", pdfUrl: null },
 ]
 
+// ── PDF Viewer Component ─────────────────────────────────────────────────────
+
+function PdfViewer({ url, onClose, title, subtitle, actions }: {
+  url: string
+  onClose: () => void
+  title: string
+  subtitle?: React.ReactNode
+  actions?: React.ReactNode
+}) {
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 gap-0">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between border-b px-4 py-3 shrink-0">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm truncate flex items-center gap-2">
+              <FileText className="size-4 shrink-0 text-primary" />
+              {title}
+            </h3>
+            {subtitle && <div className="mt-0.5">{subtitle}</div>}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const a = document.createElement("a")
+                a.href = url
+                a.download = `${title}.pdf`
+                a.click()
+              }}
+            >
+              <Download className="size-3.5 mr-1.5" /> Download
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const w = window.open(url)
+                if (w) setTimeout(() => w.print(), 500)
+              }}
+            >
+              <Printer className="size-3.5 mr-1.5" /> Print
+            </Button>
+            {actions}
+          </div>
+        </div>
+
+        {/* PDF iframe */}
+        <div className="flex-1 min-h-0 bg-muted/50">
+          <iframe
+            src={url + "#toolbar=1&navpanes=0"}
+            className="w-full h-full border-0"
+            title="PDF Viewer"
+          />
+        </div>
+
+        {/* Bottom bar */}
+        <div className="flex items-center justify-end border-t px-4 py-2.5 shrink-0 gap-2">
+          <Button variant="outline" size="sm" onClick={onClose}>Sluiten</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── ContractView (used from Properties detail) ──────────────────────────────
+
 export function ContractView({ property, onBack, backLabel }: { property: { name: string; id: string }; onBack: () => void; backLabel?: string }) {
   const [templates] = useState<ContractTemplate[]>(initialTemplates)
-  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewTitle, setPreviewTitle] = useState("")
+
+  const fullProperty = properties.find(p => p.id === property.id)
+  const owner = fullProperty ? owners.find(o => o.propertyIds.includes(fullProperty.id)) : null
+
+  const handlePreview = useCallback((template: ContractTemplate) => {
+    if (template.pdfUrl) {
+      setPreviewUrl(template.pdfUrl)
+    } else if (fullProperty && owner && template.category === "huurovereenkomst") {
+      const url = generateContractPdf(fullProperty, owner)
+      setPreviewUrl(url)
+    } else {
+      const url = generateTemplatePdf(template.name, template.category, fullProperty, owner)
+      setPreviewUrl(url)
+    }
+    setPreviewTitle(template.name)
+  }, [fullProperty, owner])
 
   return (
     <div className="space-y-6">
@@ -64,54 +151,50 @@ export function ContractView({ property, onBack, backLabel }: { property: { name
       </div>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {templates.filter(t => t.category === "huurovereenkomst").map((t) => (
-          <Card key={t.id} className="cursor-pointer hover:shadow-md transition-all" onClick={() => setSelectedTemplate(t)}>
+          <Card key={t.id} className="cursor-pointer hover:shadow-md transition-all group" onClick={() => handlePreview(t)}>
             <CardContent className="p-4 flex items-start gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 shrink-0">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 transition-colors">
                 <FileText className="size-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm">{t.name}</p>
                 <p className="text-xs text-muted-foreground mt-1">{t.fileSize}</p>
+                <p className="text-xs text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Klik om preview te openen</p>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
-      {selectedTemplate && (
-        <Dialog open={!!selectedTemplate} onOpenChange={() => setSelectedTemplate(null)}>
-          <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-            <DialogHeader>
-              <DialogTitle>{selectedTemplate.name}</DialogTitle>
-              <DialogDescription>Preview voor {property.name}</DialogDescription>
-            </DialogHeader>
-            <div className="flex-1 min-h-0 bg-muted rounded-lg flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <File className="size-16 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">PDF Preview</p>
-                <p className="text-sm mt-1">Upload een PDF in Contract Templates om preview te activeren</p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSelectedTemplate(null)}>Sluiten</Button>
-              <Button><Send className="size-4 mr-2" />Versturen naar huurder</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
+      {previewUrl && (
+        <PdfViewer
+          url={previewUrl}
+          onClose={() => { setPreviewUrl(null); setPreviewTitle("") }}
+          title={previewTitle}
+          subtitle={<span className="text-xs text-muted-foreground">Preview voor {property.name}</span>}
+          actions={
+            <Button size="sm">
+              <Send className="size-3.5 mr-1.5" /> Versturen naar huurder
+            </Button>
+          }
+        />
       )}
     </div>
   )
 }
 
+// ── ContractsModule (Templates management) ──────────────────────────────────
+
 export function ContractsModule() {
   const [templates, setTemplates] = useState<ContractTemplate[]>(initialTemplates)
   const [search, setSearch] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
-  const [viewingTemplate, setViewingTemplate] = useState<ContractTemplate | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewTitle, setPreviewTitle] = useState("")
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploadName, setUploadName] = useState("")
   const [uploadCategory, setUploadCategory] = useState<string>("huurovereenkomst")
   const [uploadFile, setUploadFile] = useState<globalThis.File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   const filtered = templates
     .filter((t) => categoryFilter === "all" || t.category === categoryFilter)
@@ -142,17 +225,40 @@ export function ContractsModule() {
     setUploadCategory("huurovereenkomst")
   }
 
-  const handleView = (template: ContractTemplate) => {
-    setViewingTemplate(template)
-    setPreviewUrl(template.pdfUrl)
-  }
+  const handleView = useCallback((template: ContractTemplate) => {
+    if (template.pdfUrl) {
+      // User-uploaded PDF
+      setPreviewUrl(template.pdfUrl)
+    } else {
+      // Generate PDF from template
+      // For huurovereenkomst templates, use first occupied property as demo
+      const demoProperty = properties.find(p => p.tenant && p.leaseStart)
+      const demoOwner = demoProperty ? owners.find(o => o.propertyIds.includes(demoProperty.id)) : null
+      const url = generateTemplatePdf(template.name, template.category, demoProperty, demoOwner)
+      setPreviewUrl(url)
+    }
+    setPreviewTitle(template.name)
+  }, [])
+
+  const handleDownload = useCallback((template: ContractTemplate) => {
+    let url = template.pdfUrl
+    if (!url) {
+      const demoProperty = properties.find(p => p.tenant && p.leaseStart)
+      const demoOwner = demoProperty ? owners.find(o => o.propertyIds.includes(demoProperty.id)) : null
+      url = generateTemplatePdf(template.name, template.category, demoProperty, demoOwner)
+    }
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${template.name}.pdf`
+    a.click()
+  }, [])
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Contract Templates</h2>
-          <p className="text-muted-foreground">Beheer uw contract-templates en upload PDF-documenten</p>
+          <p className="text-muted-foreground">Beheer uw contract-templates en bekijk PDF-documenten</p>
         </div>
         <Button onClick={() => setUploadOpen(true)}>
           <Plus className="size-4 mr-2" /> Template Uploaden
@@ -167,7 +273,7 @@ export function ContractsModule() {
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[200px]"><SelectValue placeholder="Categorie" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle categorieën</SelectItem>
+            <SelectItem value="all">Alle categorie&euml;n</SelectItem>
             <SelectItem value="huurovereenkomst">Huurovereenkomst</SelectItem>
             <SelectItem value="plaatsbeschrijving">Plaatsbeschrijving</SelectItem>
             <SelectItem value="opzeg">Opzegging</SelectItem>
@@ -217,7 +323,7 @@ export function ContractsModule() {
                   <Button variant="ghost" size="icon" onClick={() => handleView(template)} title="Bekijken">
                     <Eye className="size-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" title="Downloaden">
+                  <Button variant="ghost" size="icon" onClick={() => handleDownload(template)} title="Downloaden">
                     <Download className="size-4" />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => setTemplates((prev) => prev.filter((t) => t.id !== template.id))} title="Verwijderen" className="text-destructive hover:text-destructive">
@@ -290,55 +396,14 @@ export function ContractsModule() {
         </DialogContent>
       </Dialog>
 
-      {/* PDF Viewer Dialog */}
-      <Dialog open={!!viewingTemplate} onOpenChange={() => { setViewingTemplate(null); setPreviewUrl(null) }}>
-        <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="size-5" />
-              {viewingTemplate?.name}
-            </DialogTitle>
-            <DialogDescription>
-              {viewingTemplate && (
-                <span className="flex items-center gap-2 mt-1">
-                  <Badge className={categoryColors[viewingTemplate.category] + " text-xs"}>
-                    {categoryLabels[viewingTemplate.category]}
-                  </Badge>
-                  {viewingTemplate.fileSize}
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 min-h-0 rounded-lg overflow-hidden border bg-muted">
-            {previewUrl ? (
-              <iframe src={previewUrl} className="w-full h-full" title="PDF Viewer" />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <File className="size-16 mb-3 opacity-30" />
-                <p className="font-medium">Geen PDF beschikbaar</p>
-                <p className="text-sm mt-1">Dit is een demo template. Upload een PDF om de viewer te gebruiken.</p>
-                <Button variant="outline" size="sm" className="mt-4" onClick={() => document.getElementById("pdf-replace")?.click()}>
-                  <Upload className="size-4 mr-2" /> PDF Uploaden
-                </Button>
-                <input id="pdf-replace" type="file" accept=".pdf" className="hidden" onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) {
-                    const url = URL.createObjectURL(file)
-                    setPreviewUrl(url)
-                    if (viewingTemplate) {
-                      setTemplates(prev => prev.map(t => t.id === viewingTemplate.id ? { ...t, pdfUrl: url } : t))
-                    }
-                  }
-                }} />
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setViewingTemplate(null); setPreviewUrl(null) }}>Sluiten</Button>
-            <Button><Download className="size-4 mr-2" /> Downloaden</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* PDF Viewer */}
+      {previewUrl && (
+        <PdfViewer
+          url={previewUrl}
+          onClose={() => { setPreviewUrl(null); setPreviewTitle("") }}
+          title={previewTitle}
+        />
+      )}
     </div>
   )
 }

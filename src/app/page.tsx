@@ -4,7 +4,6 @@ import { useState } from "react"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { TopHeader } from "@/components/top-header"
-import { DotPattern } from "@/components/dot-pattern"
 import { DashboardModule } from "@/components/modules/dashboard"
 import { PropertiesModule } from "@/components/modules/properties"
 import { TenantsModule } from "@/components/modules/tenants"
@@ -21,6 +20,8 @@ import { TeamModule } from "@/components/modules/team"
 import { AIAssistantModule } from "@/components/modules/ai-assistant"
 import { OwnersModule } from "@/components/modules/owners"
 import { CandidatesModule } from "@/components/modules/candidates"
+import { ContractDashboardModule } from "@/components/modules/contract-dashboard"
+import { DotPattern } from "@/components/dot-pattern"
 
 const moduleLabels: Record<string, string> = {
   dashboard: "Dashboard",
@@ -29,9 +30,10 @@ const moduleLabels: Record<string, string> = {
   tenants: "Huurders",
   candidates: "Kandidaten",
   map: "Pandenkaart",
-  contracts: "Contracten",
+  "contract-dashboard": "Contract Dashboard",
+  contracts: "Templates",
   tickets: "Tickets",
-  invoicing: "Facturatie",
+  invoicing: "Betalingen",
   interventions: "Interventies",
   messages: "Berichten",
   email: "E-mail",
@@ -44,16 +46,18 @@ const moduleLabels: Record<string, string> = {
 export default function Home() {
   const [activeModule, setActiveModule] = useState("dashboard")
   const [customerLogo, setCustomerLogo] = useState<string | null>(null)
-  const [userPhoto, setUserPhoto] = useState<string | null>(null)
+  const [userPhoto, setUserPhoto] = useState<string | null>("https://i.pravatar.cc/150?img=47")
+  const [hoverExpand, setHoverExpand] = useState(false)
 
   const renderModule = () => {
     switch (activeModule) {
-      case "dashboard": return <DashboardModule />
+      case "dashboard": return <DashboardModule onModuleChange={setActiveModule} />
       case "properties": return <PropertiesModule />
       case "tenants": return <TenantsModule />
       case "owners": return <OwnersModule />
       case "candidates": return <CandidatesModule />
       case "map": return <PropertyMapModule />
+      case "contract-dashboard": return <ContractDashboardModule />
       case "contracts": return <ContractsModule />
       case "tickets": return <TicketsModule />
       case "invoicing": return <InvoicingModule />
@@ -64,18 +68,19 @@ export default function Home() {
       case "ai-assistant": return <AIAssistantModule />
       case "workers": return <WorkersModule />
       case "team": return <TeamModule onLogoChange={setCustomerLogo} />
-      default: return <DashboardModule />
+      default: return <DashboardModule onModuleChange={setActiveModule} />
     }
   }
 
   return (
+    <>
+    <DotPattern />
     <SidebarProvider>
-      <DotPattern />
       <AppSidebar
         activeModule={activeModule}
         onModuleChange={setActiveModule}
         customerLogo={customerLogo}
-        onLogoChange={setCustomerLogo}
+        hoverExpand={hoverExpand}
       />
       <SidebarInset className="!bg-transparent">
         <TopHeader
@@ -85,11 +90,15 @@ export default function Home() {
           userPhoto={userPhoto}
           onUserPhotoChange={setUserPhoto}
           onModuleChange={setActiveModule}
+          onLogoChange={setCustomerLogo}
+          hoverExpand={hoverExpand}
+          onHoverExpandChange={setHoverExpand}
         />
         <main className="relative z-10 flex-1 overflow-auto p-6">
           {renderModule()}
         </main>
       </SidebarInset>
     </SidebarProvider>
+    </>
   )
 }
